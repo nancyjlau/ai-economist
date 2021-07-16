@@ -30,7 +30,7 @@ endogenous_registry = Registry(Endogenous)
 
 
 @endogenous_registry.add
-class Labor(Endogenous):
+class Skill(Endogenous):
     """Labor accumulated through working. Included in all environments by default."""
 
-    name = "Labor"
+    name = "Skill"

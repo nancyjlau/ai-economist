@@ -1,8 +1,4 @@
-# Copyright (c) 2020, salesforce.com, inc.
-# All rights reserved.
-# SPDX-License-Identifier: BSD-3-Clause
-# For full license text, see the LICENSE file in the repo root
-# or https://opensource.org/licenses/BSD-3-Clause
+
 
 import random
 
@@ -221,10 +217,6 @@ class BaseAgent:
             n_actions += self.action_dim[m]
         return n_actions
 
-    @property
-    def loc(self):
-        """2D list of [row, col] representing agent's location in the environment."""
-        return self.state["loc"]
 
     @property
     def endogenous(self):
@@ -246,79 +238,6 @@ class BaseAgent:
         """
         return self.state["inventory"]
 
-    @property
-    def escrow(self):
-        """Dictionary representing quantities of resources in agent's escrow.
-
-        https://en.wikipedia.org/wiki/Escrow
-        Escrow is used to manage any portion of the agent's inventory that is
-        reserved for a particular purpose. Typically, something enters escrow as part
-        of a contractual arrangement to disburse that something when another
-        condition is met. An example is found in the ContinuousDoubleAuction
-        Component class (see ../components/continuous_double_auction.py). When an
-        agent creates an order to sell a unit of Wood, for example, the component
-        moves one unit of Wood from the agent's inventory to its escrow. If another
-        agent buys the Wood, it is moved from escrow to the other agent's inventory. By
-        placing the Wood in escrow, it prevents the first agent from using it for
-        something else (i.e. building a house).
-
-        Notes:
-            The inventory and escrow share the same keys. An agent's endowment refers
-            to the total quantity it has in its inventory and escrow.
-
-            Escrow is provided to simplify inventory management but its intended
-            semantics are not enforced directly. It is up to Component classes to
-            enforce these semantics.
-
-        Example:
-            >> self.inventory
-            {"Wood": 0, "Stone": 1, "Coin": 3}
-        """
-        return self.state["escrow"]
-
-    def inventory_to_escrow(self, resource, amount):
-        """Move some amount of a resource from agent inventory to agent escrow.
-
-        Amount transferred is capped to the amount of resource in agent inventory.
-
-        Args:
-            resource (str): The name of the resource to move (i.e. "Wood", "Coin").
-            amount (float): The amount to be moved from inventory to escrow. Must be
-                positive.
-
-        Returns:
-            Amount of resource actually transferred. Will be less than amount argument
-                if amount argument exceeded the amount of resource in the inventory.
-                Calculated as:
-                    transferred = np.minimum(self.state["inventory"][resource], amount)
-        """
-        assert amount >= 0
-        transferred = float(np.minimum(self.state["inventory"][resource], amount))
-        self.state["inventory"][resource] -= transferred
-        self.state["escrow"][resource] += transferred
-        return float(transferred)
-
-    def escrow_to_inventory(self, resource, amount):
-        """Move some amount of a resource from agent escrow to agent inventory.
-
-        Amount transferred is capped to the amount of resource in agent escrow.
-
-        Args:
-            resource (str): The name of the resource to move (i.e. "Wood", "Coin").
-            amount (float): The amount to be moved from escrow to inventory. Must be
-                positive.
-
-        Returns:
-            Amount of resource actually transferred. Will be less than amount argument
-                if amount argument exceeded the amount of resource in escrow.
-                Calculated as:
-                    transferred = np.minimum(self.state["escrow"][resource], amount)
-        """
-        assert amount >= 0
-        transferred = float(np.minimum(self.state["escrow"][resource], amount))
-        self.state["escrow"][resource] -= transferred
-        self.state["inventory"][resource] += transferred
-        return float(transferred)
 
     def total_endowment(self, resource):
         """Get the combined inventory+escrow endowment of resource.
@@ -330,7 +249,7 @@ class BaseAgent:
             The amount of resource in the agents inventory and escrow.
 
         """
-        return self.inventory[resource] + self.escrow[resource]
+        return self.inventory[resource] 
 
     def reset_actions(self, component=None):
         """Reset all actions to the NO-OP action (the 0'th action index).
@@ -436,28 +355,6 @@ class BaseAgent:
                     return
                 action_name, action = self.single_action_map.get(action)
                 self.set_component_action(action_name, action)
-
-    def flatten_masks(self, mask_dict):
-        """Convert a dictionary of component action masks into a single mask vector."""
-        if self._one_component_single_action:
-            self._premask[1:] = mask_dict[self._action_names[0]]
-            return self._premask
-
-        no_op_mask = [1]
-
-        if self._passive_multi_action_agent:
-            return np.array(no_op_mask).astype(np.float32)
-
-        list_of_masks = []
-        if not self.multi_action_mode:
-            list_of_masks.append(no_op_mask)
-        for m in self._action_names:
-            if m not in mask_dict:
-                raise KeyError("No mask provided for {} (agent {})".format(m, self.idx))
-            if self.multi_action_mode:
-                list_of_masks.append(no_op_mask)
-            list_of_masks.append(mask_dict[m])
-        return np.concatenate(list_of_masks).astype(np.float32)
 
 
 agent_registry = Registry(BaseAgent)

@@ -77,8 +77,6 @@ class Build(BaseComponent):
         # Do nothing if this spot is already occupied by a landmark or resource
         if self.world.location_resources(*agent.loc):
             return False
-        if self.world.location_landmarks(*agent.loc):
-            return False
         # If we made it here, the agent can build.
         return True
 
@@ -136,10 +134,6 @@ class Build(BaseComponent):
                     # Remove the resources
                     for resource, cost in self.resource_cost.items():
                         agent.state["inventory"][resource] -= cost
-
-                    # Place a house where the agent is standing
-                    loc_r, loc_c = agent.loc
-                    world.create_landmark("House", loc_r, loc_c, agent.idx)
 
                     # Receive payment for the house
                     agent.state["inventory"]["Coin"] += agent.state["build_payment"]

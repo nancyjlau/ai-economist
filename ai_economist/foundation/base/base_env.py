@@ -16,7 +16,6 @@ from ai_economist.foundation.base.world import World
 from ai_economist.foundation.components import component_registry
 from ai_economist.foundation.entities import (
     endogenous_registry,
-    landmark_registry,
     resource_registry,
 )
 
@@ -283,7 +282,6 @@ class BaseEnvironment(ABC):
         # Coin and Labor are always included.
         self._entities = {
             "resources": ["Coin"],
-            "landmarks": [],
             "endogenous": ["Labor"],
         }
         self._register_entities(self.required_entities)
@@ -312,7 +310,7 @@ class BaseEnvironment(ABC):
             self.world_size,
             self.n_agents,
             self.resources,
-            self.landmarks,
+
             self.multi_action_mode_agents,
             self.multi_action_mode_planner,
         )
@@ -366,9 +364,6 @@ class BaseEnvironment(ABC):
             if resource_registry.has(entity):
                 if entity not in self._entities["resources"]:
                     self._entities["resources"].append(entity)
-            elif landmark_registry.has(entity):
-                if entity not in self._entities["landmarks"]:
-                    self._entities["landmarks"].append(entity)
             elif endogenous_registry.has(entity):
                 if entity not in self._entities["endogenous"]:
                     self._entities["endogenous"].append(entity)
@@ -393,10 +388,6 @@ class BaseEnvironment(ABC):
         """List of resources managed by this environment instance."""
         return sorted(list(self._entities["resources"]))
 
-    @property
-    def landmarks(self):
-        """List of landmarks managed by this environment instance."""
-        return sorted(list(self._entities["landmarks"]))
 
     @property
     def endogenous(self):

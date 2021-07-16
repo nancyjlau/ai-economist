@@ -84,7 +84,7 @@ class BaseComponent(ABC):
 
         self.n_agents = world.n_agents
         self.resources = world.resources
-        self.landmarks = world.landmarks
+        
 
         self.timescale = 1
         assert self.timescale >= 1
