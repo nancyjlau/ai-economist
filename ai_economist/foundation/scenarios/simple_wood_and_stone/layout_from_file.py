@@ -62,7 +62,7 @@ class LayoutFromFile(BaseEnvironment):
 
     name = "layout_from_file/simple_wood_and_stone"
     agent_subclasses = ["BasicMobileAgent", "BasicPlanner"]
-    required_entities = ["Wood", "Stone", "Water"]
+    required_entities = ["Project", "Time"]
 
     def __init__(
         self,
@@ -91,41 +91,31 @@ class LayoutFromFile(BaseEnvironment):
         self._full_observability = bool(full_observability)
 
         self._mobile_agent_observation_range = int(mobile_agent_observation_range)
-
+        
         # Load in the layout
-        path_to_layout_file = (
-            "/".join(__file__.split("/")[:-1]) + "/map_txt/" + env_layout_file
-        )
-        with open(path_to_layout_file, "r") as f:
-            self.env_layout_string = f.read()
-            self.env_layout = self.env_layout_string.split(";")
+        # path_to_layout_file = (
+        #     "/".join(__file__.split("/")[:-1]) + "/map_txt/" + env_layout_file
+        # )
+        # with open(path_to_layout_file, "r") as f:
+        #     self.env_layout_string = f.read()
+        #     self.env_layout = self.env_layout_string.split(";")
 
-        # Convert the layout to landmark maps
-        landmark_lookup = {"W": "Wood", "S": "Stone", "@": "Water"}
-        self._source_maps = {
-            r: np.zeros(self.world_size) for r in landmark_lookup.values()
-        }
-        for r, symbol_row in enumerate(self.env_layout):
-            for c, symbol in enumerate(symbol_row):
-                landmark = landmark_lookup.get(symbol, None)
-                if landmark:
-                    self._source_maps[landmark][r, c] = 1
 
-        # For controlling how resource regeneration behavior
-        self.layout_specs = dict(
-            Wood={
-                "regen_weight": float(resource_regen_prob),
-                "regen_halfwidth": 0,
-                "max_health": 1,
-            },
-            Stone={
-                "regen_weight": float(resource_regen_prob),
-                "regen_halfwidth": 0,
-                "max_health": 1,
-            },
-        )
-        assert 0 <= self.layout_specs["Wood"]["regen_weight"] <= 1
-        assert 0 <= self.layout_specs["Stone"]["regen_weight"] <= 1
+        # # For controlling how resource regeneration behavior
+        # self.layout_specs = dict(
+        #     Wood={
+        #         "regen_weight": float(resource_regen_prob),
+        #         "regen_halfwidth": 0,
+        #         "max_health": 1,
+        #     },
+        #     Stone={
+        #         "regen_weight": float(resource_regen_prob),
+        #         "regen_halfwidth": 0,
+        #         "max_health": 1,
+        #     },
+        # )
+        # assert 0 <= self.layout_specs["Wood"]["regen_weight"] <= 1
+        # assert 0 <= self.layout_specs["Stone"]["regen_weight"] <= 1
 
         # How much coin do agents begin with at upon reset
         self.starting_agent_coin = float(starting_agent_coin)
@@ -175,7 +165,7 @@ class LayoutFromFile(BaseEnvironment):
         self.fixed_four_skill_and_loc = bool(fixed_four_skill_and_loc)
         if self.fixed_four_skill_and_loc:
             assert self.n_agents == 4
-            bm = self.get_component("Build")
+            bm = self.get_component("Work")
             assert bm.skill_dist == "pareto"
             pmsm = bm.payment_max_skill_multiplier
 
@@ -203,6 +193,8 @@ class LayoutFromFile(BaseEnvironment):
                 # Best agent goes in bottom right
                 (self.world_size[1] - 1, self.world_size[1] - 1),
             ]
+        for agent in self.world.agents:
+            print(agent.resource["project"])
 
     @property
     def energy_weight(self):
@@ -286,10 +278,7 @@ class LayoutFromFile(BaseEnvironment):
         Here, reset to the layout in the fixed layout file
         """
         self.world.maps.clear()
-        for landmark, landmark_map in self._source_maps.items():
-            self.world.maps.set(landmark, landmark_map)
-            if landmark in ["Stone", "Wood"]:
-                self.world.maps.set(landmark + "SourceBlock", landmark_map)
+
 
     def reset_agent_states(self):
         """
@@ -339,7 +328,7 @@ class LayoutFromFile(BaseEnvironment):
         regeneration.
         """
 
-        resources = ["Wood", "Stone"]
+        resources = ["Project", "Time"]
 
         for resource in resources:
             d = 1 + (2 * self.layout_specs[resource]["regen_halfwidth"])

@@ -24,13 +24,11 @@ class Resource:
     """
 
     name = None
-    color = None  # array of RGB values [0 - 1]
     collectible = None  # Is this something that exists in the world?
     # (versus something that can only be owned)
 
     def __init__(self):
         assert self.name is not None
-        assert self.color is not None
         assert self.collectible is not None
 
 
@@ -38,21 +36,24 @@ resource_registry = Registry(Resource)
 
 
 @resource_registry.add
-class Wood(Resource):
-    """Wood resource. collectible."""
+class Time(Resource):
+    """Time resource. Non collectible."""
 
-    name = "Wood"
-    color = np.array([107, 143, 113]) / 255.0
-    collectible = True
+    name = "Time"
+    collectible = False
 
 
 @resource_registry.add
-class Stone(Resource):
-    """Stone resource. collectible."""
-
-    name = "Stone"
-    color = np.array([241, 233, 219]) / 255.0
+class Project(Resource):
+    """Project resource"""
+    name = "Project"
     collectible = True
+    def __init__(self,project_time,hardness,payment):
+        self.project_time= project_time
+        self.hardness = hardness
+        self.payment = payment
+    
+
 
 
 @resource_registry.add
@@ -60,5 +61,4 @@ class Coin(Resource):
     """Coin resource. Included in all environments by default. Not collectible."""
 
     name = "Coin"
-    color = np.array([229, 211, 82]) / 255.0
     collectible = False

@@ -80,7 +80,6 @@ class BaseAgent:
         assert not self._registered_inventory
         for entity_name in resources:
             self.inventory[entity_name] = 0
-            self.escrow[entity_name] = 0
         self._registered_inventory = True
 
     def register_endogenous(self, endogenous):

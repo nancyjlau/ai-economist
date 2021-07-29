@@ -36,7 +36,7 @@ class ContinuousDoubleAuction(BaseComponent):
 
     name = "ContinuousDoubleAuction"
     component_type = "Trade"
-    required_entities = ["Coin", "Labor"]
+    required_entities = ["Coin", "Time"]
     agent_subclasses = ["BasicMobileAgent"]
 
     def __init__(

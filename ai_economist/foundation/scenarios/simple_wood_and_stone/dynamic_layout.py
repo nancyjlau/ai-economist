@@ -9,10 +9,8 @@ from copy import deepcopy
 import numpy as np
 from scipy import signal
 
-from ai_economist.foundation.base.base_env import BaseEnvironment, scenario_registry
-
+from ai_economist.foundation.base.base_env import BaseEnvironment, scenario_registry,resource_registry
 from ..utils import rewards, social_metrics
-
 
 @scenario_registry.add
 class Uniform(BaseEnvironment):
@@ -76,7 +74,7 @@ class Uniform(BaseEnvironment):
 
     name = "uniform/simple_wood_and_stone"
     agent_subclasses = ["BasicMobileAgent", "BasicPlanner"]
-    required_entities = ["Wood", "Stone"]
+    required_entities = ["Project", "Time"]
 
     def __init__(
         self,
@@ -215,6 +213,10 @@ class Uniform(BaseEnvironment):
         self.init_optimization_metric = {agent.idx: 0 for agent in self.all_agents}
         self.prev_optimization_metric = {agent.idx: 0 for agent in self.all_agents}
         self.curr_optimization_metric = {agent.idx: 0 for agent in self.all_agents}
+        
+        #Project Board
+        self.project_count = 10
+
 
     @property
     def energy_weight(self):
@@ -247,9 +249,10 @@ class Uniform(BaseEnvironment):
         curr_optimization_metric = {}
         # (for agents)
         for agent in self.world.agents:
+            print(agent.state["endogenous"])
             curr_optimization_metric[agent.idx] = rewards.isoelastic_coin_minus_labor(
                 coin_endowment=agent.total_endowment("Coin"),
-                total_labor=agent.state["endogenous"]["Labor"],
+                total_labor=agent.state["endogenous"]["Hardness"],
                 isoelastic_eta=self.isoelastic_eta,
                 labor_coefficient=self.energy_weight * self.energy_cost,
             )
@@ -322,75 +325,76 @@ class Uniform(BaseEnvironment):
         n_reset_tries = 0
 
         # Attempt to do a reset until an attempt limit is reached or coverage is good
-        while n_reset_tries < 100 and not happy_coverage:
-            self.world.maps.clear()
+        # while n_reset_tries < 100 and not happy_coverage:
+        self.world.maps.clear()
 
-            self.source_maps = {
+        self.source_maps = {
                 k: np.zeros_like(v) for k, v in self.source_prob_maps.items()
             }
 
-            resources = ["Wood", "Stone"]
+        resources = ["project", "time"]
+       
 
-            for resource in resources:
-                clump = 1 - np.clip(self.clumpiness[resource], 0.0, 0.99)
+        #     for resource in resources:
+        #         clump = 1 - np.clip(self.clumpiness[resource], 0.0, 0.99)
 
-                source_prob = self.source_prob_maps[resource] * 0.1 * clump
+        #         source_prob = self.source_prob_maps[resource] * 0.1 * clump
 
-                empty = self.world.maps.empty
+        #         empty = self.world.maps.empty
 
-                tmp = np.random.rand(*source_prob.shape)
-                maybe_source_map = (tmp < source_prob) * empty
+        #         tmp = np.random.rand(*source_prob.shape)
+        #         maybe_source_map = (tmp < source_prob) * empty
 
-                n_tries = 0
-                while np.mean(maybe_source_map) < (
-                    self.layout_specs[resource]["starting_coverage"] * clump
-                ):
-                    tmp *= 0.9
-                    maybe_source_map = (tmp < source_prob) * empty
-                    n_tries += 1
-                    if n_tries > 200:
-                        break
+        #         n_tries = 0
+        #         while np.mean(maybe_source_map) < (
+        #             self.layout_specs[resource]["starting_coverage"] * clump
+        #         ):
+        #             tmp *= 0.9
+        #             maybe_source_map = (tmp < source_prob) * empty
+        #             n_tries += 1
+        #             if n_tries > 200:
+        #                 break
 
-                while (
-                    np.mean(maybe_source_map)
-                    < self.layout_specs[resource]["starting_coverage"]
-                ):
-                    kernel = np.random.randn(7, 7) > 0
-                    tmp = signal.convolve2d(
-                        maybe_source_map
-                        + (0.2 * np.random.randn(*maybe_source_map.shape))
-                        - 0.25,
-                        kernel.astype(np.float32),
-                        "same",
-                    )
-                    maybe_source_map = np.maximum(tmp > 0, maybe_source_map) * empty
+        #         while (
+        #             np.mean(maybe_source_map)
+        #             < self.layout_specs[resource]["starting_coverage"]
+        #         ):
+        #             kernel = np.random.randn(7, 7) > 0
+        #             tmp = signal.convolve2d(
+        #                 maybe_source_map
+        #                 + (0.2 * np.random.randn(*maybe_source_map.shape))
+        #                 - 0.25,
+        #                 kernel.astype(np.float32),
+        #                 "same",
+        #             )
+        #             maybe_source_map = np.maximum(tmp > 0, maybe_source_map) * empty
 
-                self.source_maps[resource] = maybe_source_map
-                self.world.maps.set(
-                    resource, maybe_source_map
-                )  # * self.layout_specs[resource]['max_health'])
-                self.world.maps.set(resource + "SourceBlock", maybe_source_map)
+        #         self.source_maps[resource] = maybe_source_map
+        #         self.world.maps.set(
+        #             resource, maybe_source_map
+        #         )  # * self.layout_specs[resource]['max_health'])
+        #         self.world.maps.set(resource + "SourceBlock", maybe_source_map)
 
-            # Restart if the resource distribution is too far off the target coverage
-            happy_coverage = True
-            for resource in resources:
-                coverage_quotient = (
-                    np.mean(self.source_maps[resource])
-                    / self.layout_specs[resource]["starting_coverage"]
-                )
-                bound = 0.4
-                if not (1 / (1 + bound)) <= coverage_quotient <= (1 + bound):
-                    happy_coverage = False
+        #     # Restart if the resource distribution is too far off the target coverage
+        #     happy_coverage = True
+        #     for resource in resources:
+        #         coverage_quotient = (
+        #             np.mean(self.source_maps[resource])
+        #             / self.layout_specs[resource]["starting_coverage"]
+        #         )
+        #         bound = 0.4
+        #         if not (1 / (1 + bound)) <= coverage_quotient <= (1 + bound):
+        #             happy_coverage = False
 
-            n_reset_tries += 1
+        #     n_reset_tries += 1
 
-        # Apply checkering, if applicable
-        if self._checker_source_blocks:
-            for resource, source_map in self.source_maps.items():
-                source_map = source_map * self._checker_mask
-                self.source_maps[resource] = source_map
-                self.world.maps.set(resource, source_map)
-                self.world.maps.set(resource + "SourceBlock", source_map)
+        # # Apply checkering, if applicable
+        # if self._checker_source_blocks:
+        #     for resource, source_map in self.source_maps.items():
+        #         source_map = source_map * self._checker_mask
+        #         self.source_maps[resource] = source_map
+        #         self.world.maps.set(resource, source_map)
+        #         self.world.maps.set(resource + "SourceBlock", source_map)
 
     def reset_agent_states(self):
         """
@@ -414,9 +418,9 @@ class Uniform(BaseEnvironment):
         self.world.planner.state["inventory"] = {
             k: 0 for k in self.world.planner.inventory.keys()
         }
-        self.world.planner.state["escrow"] = {
-            k: 0 for k in self.world.planner.escrow.keys()
-        }
+        # self.world.planner.state["escrow"] = {
+        #     k: 0 for k in self.world.planner.escrow.keys()
+        # }
 
         # Place the agents randomly in the world
         for agent in self.world.get_random_order_agents():
@@ -429,7 +433,7 @@ class Uniform(BaseEnvironment):
                 n_tries += 1
                 if n_tries > 200:
                     raise TimeoutError
-            self.world.set_agent_loc(agent, r, c)
+            # self.world.set_agent_loc(agent, r, c)
 
     def scenario_step(self):
         """
@@ -443,33 +447,35 @@ class Uniform(BaseEnvironment):
         regeneration.
         """
 
-        resources = ["Wood", "Stone"]
+        resources = ["Project", "Time"]
 
-        for resource in resources:
-            d = 1 + (2 * self.layout_specs[resource]["regen_halfwidth"])
-            kernel = (
-                self.layout_specs[resource]["regen_weight"] * np.ones((d, d)) / (d ** 2)
-            )
+        if self.project_count < 10:
+            self.project_count +=1
 
-            resource_map = self.world.maps.get(resource)
-            resource_source_blocks = self.world.maps.get(resource + "SourceBlock")
-            spawnable = (
-                self.world.maps.empty + resource_map + resource_source_blocks
-            ) > 0
-            spawnable *= resource_source_blocks > 0
+            # d = 1 + (2 * self.layout_specs[resource]["regen_halfwidth"])
+            # kernel = (
+            #     self.layout_specs[resource]["regen_weight"] * np.ones((d, d)) / (d ** 2)
+            # )
 
-            health = np.maximum(resource_map, resource_source_blocks)
-            respawn = np.random.rand(*health.shape) < signal.convolve2d(
-                health, kernel, "same"
-            )
-            respawn *= spawnable
+            # resource_map = self.world.maps.get(resource)
+            # resource_source_blocks = self.world.maps.get(resource + "SourceBlock")
+            # spawnable = (
+            #     self.world.maps.empty + resource_map + resource_source_blocks
+            # ) > 0
+            # spawnable *= resource_source_blocks > 0
 
-            self.world.maps.set(
-                resource,
-                np.minimum(
-                    resource_map + respawn, self.layout_specs[resource]["max_health"]
-                ),
-            )
+            # health = np.maximum(resource_map, resource_source_blocks)
+            # respawn = np.random.rand(*health.shape) < signal.convolve2d(
+            #     health, kernel, "same"
+            # )
+            # respawn *= spawnable
+
+            # self.world.maps.set(
+            #     resource,
+            #     np.minimum(
+            #         resource_map + respawn, self.layout_specs[resource]["max_health"]
+            #     ),
+            # )
 
     def generate_observations(self):
         """
@@ -495,92 +501,94 @@ class Uniform(BaseEnvironment):
         obs = {}
         curr_map = self.world.maps.state
 
-        owner_map = self.world.maps.owner_state
-        loc_map = self.world.loc_map
-        agent_idx_maps = np.concatenate([owner_map, loc_map[None, :, :]], axis=0)
-        agent_idx_maps += 2
-        agent_idx_maps[agent_idx_maps == 1] = 0
+        # owner_map = self.world.maps.owner_state
+        # loc_map = self.world.loc_map
+        # agent_idx_maps = np.concatenate([owner_map, loc_map[None, :, :]], axis=0)
+        # agent_idx_maps += 2
+        # agent_idx_maps[agent_idx_maps == 1] = 0
 
-        agent_locs = {
-            str(agent.idx): {
-                "loc-row": agent.loc[0] / self.world_size[0],
-                "loc-col": agent.loc[1] / self.world_size[1],
-            }
-            for agent in self.world.agents
-        }
+        # agent_locs = {
+        #     str(agent.idx): {
+        #         "loc-row": agent.loc[0] / self.world_size[0],
+        #         "loc-col": agent.loc[1] / self.world_size[1],
+        #     }
+        #     for agent in self.world.agents
+        # }
         agent_invs = {
             str(agent.idx): {
                 "inventory-" + k: v * self.inv_scale for k, v in agent.inventory.items()
             }
             for agent in self.world.agents
         }
+        for agent in self.world.agents:
+            if agent.state["endogenous"]["Project_status"] == 1:
+                self.project_count -= 1
+        # obs[self.world.planner.idx] = {
+        #     "inventory-" + k: v * self.inv_scale
+        #     for k, v in self.world.planner.inventory.items()
+        # }
+        # if self._planner_gets_spatial_info:
+        #     obs[self.world.planner.idx].update(
+        #         dict(map=curr_map, idx_map=agent_idx_maps)
+        #     )
 
-        obs[self.world.planner.idx] = {
-            "inventory-" + k: v * self.inv_scale
-            for k, v in self.world.planner.inventory.items()
-        }
-        if self._planner_gets_spatial_info:
-            obs[self.world.planner.idx].update(
-                dict(map=curr_map, idx_map=agent_idx_maps)
-            )
+        # # Mobile agents see the full map. Convey location info via one-hot map channels.
+        # if self._full_observability:
+        #     for agent in self.world.agents:
+        #         my_map = np.array(agent_idx_maps)
+        #         my_map[my_map == int(agent.idx) + 2] = 1
+        #         sidx = str(agent.idx)
+        #         obs[sidx] = {
+        #             "map": curr_map,
+        #             "idx_map": my_map,
+        #         }
+        #         obs[sidx].update(agent_invs[sidx])
 
-        # Mobile agents see the full map. Convey location info via one-hot map channels.
-        if self._full_observability:
-            for agent in self.world.agents:
-                my_map = np.array(agent_idx_maps)
-                my_map[my_map == int(agent.idx) + 2] = 1
-                sidx = str(agent.idx)
-                obs[sidx] = {
-                    "map": curr_map,
-                    "idx_map": my_map,
-                }
-                obs[sidx].update(agent_invs[sidx])
+        # # Mobile agents only see within a window around their position
+        # else:
+        #     w = (
+        #         self._mobile_agent_observation_range
+        #     )  # View halfwidth (only applicable without full observability)
 
-        # Mobile agents only see within a window around their position
-        else:
-            w = (
-                self._mobile_agent_observation_range
-            )  # View halfwidth (only applicable without full observability)
+        #     padded_map = np.pad(
+        #         curr_map,
+        #         [(0, 1), (w, w), (w, w)],
+        #         mode="constant",
+        #         constant_values=[(0, 1), (0, 0), (0, 0)],
+        #     )
 
-            padded_map = np.pad(
-                curr_map,
-                [(0, 1), (w, w), (w, w)],
-                mode="constant",
-                constant_values=[(0, 1), (0, 0), (0, 0)],
-            )
+        #     padded_idx = np.pad(
+        #         agent_idx_maps,
+        #         [(0, 0), (w, w), (w, w)],
+        #         mode="constant",
+        #         constant_values=[(0, 0), (0, 0), (0, 0)],
+        #     )
 
-            padded_idx = np.pad(
-                agent_idx_maps,
-                [(0, 0), (w, w), (w, w)],
-                mode="constant",
-                constant_values=[(0, 0), (0, 0), (0, 0)],
-            )
+        #     for agent in self.world.agents:
+        #         r, c = [c + w for c in agent.loc]
+        #         visible_map = padded_map[
+        #             :, (r - w) : (r + w + 1), (c - w) : (c + w + 1)
+        #         ]
+        #         visible_idx = np.array(
+        #             padded_idx[:, (r - w) : (r + w + 1), (c - w) : (c + w + 1)]
+        #         )
 
-            for agent in self.world.agents:
-                r, c = [c + w for c in agent.loc]
-                visible_map = padded_map[
-                    :, (r - w) : (r + w + 1), (c - w) : (c + w + 1)
-                ]
-                visible_idx = np.array(
-                    padded_idx[:, (r - w) : (r + w + 1), (c - w) : (c + w + 1)]
-                )
+        #         visible_idx[visible_idx == int(agent.idx) + 2] = 1
 
-                visible_idx[visible_idx == int(agent.idx) + 2] = 1
+        #         sidx = str(agent.idx)
 
-                sidx = str(agent.idx)
+        #         obs[sidx] = {
+        #             "map": visible_map,
+        #             "idx_map": visible_idx,
+        #         }
+        #         obs[sidx].update(agent_locs[sidx])
+        #         obs[sidx].update(agent_invs[sidx])
 
-                obs[sidx] = {
-                    "map": visible_map,
-                    "idx_map": visible_idx,
-                }
-                obs[sidx].update(agent_locs[sidx])
-                obs[sidx].update(agent_invs[sidx])
-
-                # Agent-wise planner info (gets crunched into the planner obs in the
-                # base scenario code)
-                obs["p" + sidx] = agent_invs[sidx]
-                if self._planner_gets_spatial_info:
-                    obs["p" + sidx].update(agent_locs[sidx])
+        #         # Agent-wise planner info (gets crunched into the planner obs in the
+        #         # base scenario code)
+        #         obs["p" + sidx] = agent_invs[sidx]
+        #         if self._planner_gets_spatial_info:
+        #             obs["p" + sidx].update(agent_locs[sidx])
 
         return obs
 

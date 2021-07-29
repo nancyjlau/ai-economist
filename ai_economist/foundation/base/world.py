@@ -158,7 +158,7 @@ class Maps:
 
     def get(self, entity_name, owner=False):
         """Return the map or ownership for entity_name."""
-        assert entity_name in self._maps
+        # assert entity_name in self._maps
         if entity_name in self._private_landmark_types:
             sub_key = "owner" if owner else "health"
             return self._maps[entity_name][sub_key]

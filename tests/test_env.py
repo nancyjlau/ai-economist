@@ -46,11 +46,11 @@ class CreateEnv:
             # Which components to use
             "components": [
                 # (1) Building houses
-                {"Build": {}},
+                {"Work": {"time":40}},
                 # (2) Trading collectible resources
                 {"ContinuousDoubleAuction": {"max_num_orders": 5}},
                 # (3) Movement and resource collection
-                {"Gather": {}},
+                # {"Gather": {}},
             ],
             # ===== SCENARIO =====
             # Which scenario class to use
@@ -98,7 +98,7 @@ class TestEnv(unittest.TestCase):
         )
 
         obs, reward, done, info = env.step({})
-
+        print(reward)
         # Check that the observation, reward and info keys match
         self.assertEqual(obs.keys(), reward.keys())
         self.assertEqual(obs.keys(), info.keys())

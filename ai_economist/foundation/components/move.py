@@ -35,7 +35,7 @@ class Gather(BaseComponent):
     """
 
     name = "Gather"
-    required_entities = ["Coin", "House", "Labor"]
+    required_entities = ["Coin", "Time", "Skill"]
     agent_subclasses = ["BasicMobileAgent"]
 
     def __init__(

@@ -281,8 +281,8 @@ class BaseEnvironment(ABC):
         # Initialize the set of entities used in the game that's being created.
         # Coin and Labor are always included.
         self._entities = {
-            "resources": ["Coin"],
-            "endogenous": ["Labor"],
+            "resources": ["Coin","Project"],
+            "endogenous": ["Skill","Project_time","Hardness","Payment","Project_status"],
         }
         self._register_entities(self.required_entities)
 
@@ -300,7 +300,10 @@ class BaseEnvironment(ABC):
                 component_config = list(component_spec.values())[0]
             else:
                 raise TypeError
+            print(component_name)
             component_cls = component_registry.get(component_name)
+            print(component_cls.required_entities)
+
             self._register_entities(component_cls.required_entities)
             component_classes.append([component_cls, component_config])
 
@@ -369,6 +372,8 @@ class BaseEnvironment(ABC):
                     self._entities["endogenous"].append(entity)
             else:
                 raise KeyError("Unknown entity: {}".format(entity))
+    
+
 
     # Properties
     # ----------
@@ -664,8 +669,8 @@ class BaseEnvironment(ABC):
                 )
 
         # Get each agent's action masks and incorporate them into the observations
-        for aidx, amask in self._generate_masks(flatten_masks=flatten_masks).items():
-            obs[aidx]["action_mask"] = amask
+        # for aidx, amask in self._generate_masks(flatten_masks=flatten_masks).items():
+        #     obs[aidx]["action_mask"] = amask
 
         return obs
 

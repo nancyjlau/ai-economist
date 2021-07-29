@@ -34,3 +34,30 @@ class Skill(Endogenous):
     """Labor accumulated through working. Included in all environments by default."""
 
     name = "Skill"
+
+@endogenous_registry.add
+class Project_status(Endogenous):
+    """Used to maintain the status of a project"""
+    name = "Project_status"
+
+@endogenous_registry.add
+class Project_time(Endogenous):
+    name ="Project_time"
+
+@endogenous_registry.add
+class Hardness(Endogenous):
+    name ="Hardness"
+
+@endogenous_registry.add
+class Payment(Endogenous):
+    name = "Payment"
+@endogenous_registry.add
+class Project_id(Endogenous):
+    name = "Project_id"
+
+@endogenous_registry.add
+class Assignment_mentor(Endogenous):
+    """ To track assignent mentor"""
+
+    name= "Assignment_mentor"
+
