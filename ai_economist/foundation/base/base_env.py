@@ -13,9 +13,11 @@ import numpy as np
 from ai_economist.foundation.agents import agent_registry
 from ai_economist.foundation.base.registrar import Registry
 from ai_economist.foundation.base.world import World
+from ai_economist.foundation.base.world import projectBoard
 from ai_economist.foundation.components import component_registry
 from ai_economist.foundation.entities import (
     endogenous_registry,
+    landmark_registry,
     resource_registry,
 )
 
@@ -281,8 +283,9 @@ class BaseEnvironment(ABC):
         # Initialize the set of entities used in the game that's being created.
         # Coin and Labor are always included.
         self._entities = {
-            "resources": ["Coin","Project"],
-            "endogenous": ["Skill","Project_time","Hardness","Payment","Project_status"],
+            "resources": ["Coin"],
+            "landmarks": [],
+            "endogenous": ["Labor"],
         }
         self._register_entities(self.required_entities)
 
@@ -300,10 +303,7 @@ class BaseEnvironment(ABC):
                 component_config = list(component_spec.values())[0]
             else:
                 raise TypeError
-            print(component_name)
             component_cls = component_registry.get(component_name)
-            print(component_cls.required_entities)
-
             self._register_entities(component_cls.required_entities)
             component_classes.append([component_cls, component_config])
 
@@ -313,7 +313,7 @@ class BaseEnvironment(ABC):
             self.world_size,
             self.n_agents,
             self.resources,
-
+            self.landmarks,
             self.multi_action_mode_agents,
             self.multi_action_mode_planner,
         )
@@ -367,13 +367,14 @@ class BaseEnvironment(ABC):
             if resource_registry.has(entity):
                 if entity not in self._entities["resources"]:
                     self._entities["resources"].append(entity)
+            elif landmark_registry.has(entity):
+                if entity not in self._entities["landmarks"]:
+                    self._entities["landmarks"].append(entity)
             elif endogenous_registry.has(entity):
                 if entity not in self._entities["endogenous"]:
                     self._entities["endogenous"].append(entity)
             else:
                 raise KeyError("Unknown entity: {}".format(entity))
-    
-
 
     # Properties
     # ----------
@@ -393,6 +394,10 @@ class BaseEnvironment(ABC):
         """List of resources managed by this environment instance."""
         return sorted(list(self._entities["resources"]))
 
+    @property
+    def landmarks(self):
+        """List of landmarks managed by this environment instance."""
+        return sorted(list(self._entities["landmarks"]))
 
     @property
     def endogenous(self):
@@ -669,8 +674,8 @@ class BaseEnvironment(ABC):
                 )
 
         # Get each agent's action masks and incorporate them into the observations
-        # for aidx, amask in self._generate_masks(flatten_masks=flatten_masks).items():
-        #     obs[aidx]["action_mask"] = amask
+        for aidx, amask in self._generate_masks(flatten_masks=flatten_masks).items():
+            obs[aidx]["action_mask"] = amask
 
         return obs
 
@@ -930,6 +935,8 @@ class BaseEnvironment(ABC):
 
         for agent in self.all_agents:
             agent.reset_actions()
+
+        
 
         if done[
             "__all__"

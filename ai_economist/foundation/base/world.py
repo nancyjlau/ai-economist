@@ -5,10 +5,42 @@
 # or https://opensource.org/licenses/BSD-3-Clause
 
 import numpy as np
-
+import random
 from ai_economist.foundation.agents import agent_registry
-from ai_economist.foundation.entities import resource_registry
+from ai_economist.foundation.entities import landmark_registry, resource_registry, Project
 
+
+class projectBoard:
+    '''
+    Start of barebones project board implementation.
+    Currently takes an upper limit on time, pay, and hardness, to be inputted by user at some point.
+    Randomly creates projects and populates a list with them that agents should be able to pull from.
+    Also hosts the repopulate function, which refills the projectBoard every timestep.
+    '''
+    def __init__(self, size, n_agents, time_Cap, pay_Cap, hardness_Cap):
+        self.size = size
+        self.n_agents = n_agents
+        self.timeCap = time_Cap
+        self.payCap = pay_Cap
+        self.hardnessCap = hardness_Cap
+        self.projectList = []
+        i = 0
+        while i < self.size:
+            randTime = random.randint(1, time_Cap)
+            randPay = random.randint(1, pay_Cap)
+            randHard = random.randint(1, hardness_Cap)
+            newProject = Project(randTime, randHard, randPay)
+            self.projectList.append(newProject)
+            i += 1
+        i = 0
+
+    def repopulate(self):
+        while len(self.projectList) < self.size:
+            randTime = random.randint(1, self.timeCap)
+            randPay = random.randint(1, self.payCap)
+            randHard = random.randint(1, self.hardnessCap)
+            newProject = Project(randTime, randHard, randPay)
+            self.projectList.append(newProject)
 
 class Maps:
     """Manages the spatial configuration of the world as a set of entity maps.
@@ -33,14 +65,15 @@ class Maps:
             construction.
     """
 
-    def __init__(self, size, n_agents, world_resources):
+    def __init__(self, size, n_agents, world_resources, world_landmarks):
         self.size = size
         self.sz_h, self.sz_w = size
 
         self.n_agents = n_agents
 
         self.resources = world_resources
-        self.entities = world_resources
+        self.landmarks = world_landmarks
+        self.entities = world_resources + world_landmarks
 
         self._maps = {}  # All maps
         self._blocked = []  # Solid objects that no agent can move through
@@ -62,8 +95,35 @@ class Maps:
                 self._resources.append(resource)
                 self._map_keys.append(resource)
 
+                self.landmarks.append("{}SourceBlock".format(resource))
 
-        
+        for landmark in self.landmarks:
+            dummy_landmark = landmark_registry.get(landmark)()
+
+            if dummy_landmark.public:
+                self._maps[landmark] = np.zeros(shape=self.size)
+                self._public.append(landmark)
+                self._map_keys.append(landmark)
+
+            elif dummy_landmark.blocking:
+                self._maps[landmark] = np.zeros(shape=self.size)
+                self._blocked.append(landmark)
+                self._map_keys.append(landmark)
+                self._accessibility_lookup[landmark] = len(self._accessibility_lookup)
+
+            elif dummy_landmark.private:
+                self._private_landmark_types.append(landmark)
+                self._maps[landmark] = dict(
+                    owner=-np.ones(shape=self.size, dtype=np.int16),
+                    health=np.zeros(shape=self.size),
+                )
+                self._private.append(landmark)
+                self._map_keys.append(landmark)
+                self._accessibility_lookup[landmark] = len(self._accessibility_lookup)
+
+            else:
+                raise NotImplementedError
+
         self._idx_map = np.stack(
             [i * np.ones(shape=self.size) for i in range(self.n_agents)]
         )
@@ -158,7 +218,7 @@ class Maps:
 
     def get(self, entity_name, owner=False):
         """Return the map or ownership for entity_name."""
-        # assert entity_name in self._maps
+        assert entity_name in self._maps
         if entity_name in self._private_landmark_types:
             sub_key = "owner" if owner else "health"
             return self._maps[entity_name][sub_key]
@@ -259,6 +319,10 @@ class Maps:
             k: self._maps[k][r, c] for k in self._resources if self._maps[k][r, c] > 0
         }
 
+    def location_landmarks(self, r, c):
+        """Return {landmark: health} dictionary for any landmarks at location [r, c]."""
+        tmp = {k: self.get_point(k, r, c) for k in self.keys()}
+        return {k: v for k, v in tmp.items() if k not in self._resources and v > 0}
 
     @property
     def unoccupied(self):
@@ -333,15 +397,17 @@ class World:
         world_size,
         n_agents,
         world_resources,
+        world_landmarks,
         multi_action_mode_agents,
         multi_action_mode_planner,
     ):
         self.world_size = world_size
         self.n_agents = n_agents
         self.resources = world_resources
+        self.landmarks = world_landmarks
         self.multi_action_mode_agents = bool(multi_action_mode_agents)
         self.multi_action_mode_planner = bool(multi_action_mode_planner)
-        self.maps = Maps(world_size, n_agents, world_resources)
+        self.maps = Maps(world_size, n_agents, world_resources, world_landmarks)
 
         mobile_class = agent_registry.get("BasicMobileAgent")
         planner_class = agent_registry.get("BasicPlanner")
@@ -422,6 +488,19 @@ class World:
         if not self.is_valid(r, c):
             return {}
         return self.maps.location_resources(r, c)
+
+    def location_landmarks(self, r, c):
+        """Return {landmark: health} dictionary for any landmarks at location [r, c]."""
+        if not self.is_valid(r, c):
+            return {}
+        return self.maps.location_landmarks(r, c)
+
+    def create_landmark(self, landmark_name, r, c, agent_idx=None):
+        """Place a landmark on the world map.
+
+        Place landmark of type landmark_name at the given coordinates, indicating
+        agent ownership if applicable."""
+        self.maps.set_point(landmark_name, r, c, 1, owner=agent_idx)
 
     def consume_resource(self, resource_name, r, c):
         """Consume a unit of resource_name from location [r, c]."""
