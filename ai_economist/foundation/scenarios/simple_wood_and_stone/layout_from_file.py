@@ -166,7 +166,7 @@ class LayoutFromFile(BaseEnvironment):
         if self.fixed_four_skill_and_loc:
             assert self.n_agents == 4
             bm = self.get_component("Work")
-            assert bm.skill_dist == "pareto"
+            #assert bm.skill_dist == "pareto"
             pmsm = bm.payment_max_skill_multiplier
 
             # Temporarily switch to a fixed seed for controlling randomness
@@ -193,9 +193,7 @@ class LayoutFromFile(BaseEnvironment):
                 # Best agent goes in bottom right
                 (self.world_size[1] - 1, self.world_size[1] - 1),
             ]
-        for agent in self.world.agents:
-            print(agent.resource["project"])
-
+        
     @property
     def energy_weight(self):
         """
@@ -229,7 +227,7 @@ class LayoutFromFile(BaseEnvironment):
         for agent in self.world.agents:
             curr_optimization_metric[agent.idx] = rewards.isoelastic_coin_minus_labor(
                 coin_endowment=agent.total_endowment("Coin"),
-                total_labor=agent.state["endogenous"]["Labor"],
+                total_labor=agent.state["endogenous"]["Skill"],
                 isoelastic_eta=self.isoelastic_eta,
                 labor_coefficient=self.energy_weight * self.energy_cost,
             )
@@ -300,9 +298,9 @@ class LayoutFromFile(BaseEnvironment):
         self.world.planner.state["inventory"] = {
             k: 0 for k in self.world.planner.inventory.keys()
         }
-        self.world.planner.state["escrow"] = {
-            k: 0 for k in self.world.planner.escrow.keys()
-        }
+        # self.world.planner.state["escrow"] = {
+        #     k: 0 for k in self.world.planner.escrow.keys()
+        # }
 
         for agent in self.world.agents:
             r = np.random.randint(0, self.world_size[0])
@@ -314,7 +312,7 @@ class LayoutFromFile(BaseEnvironment):
                 n_tries += 1
                 if n_tries > 200:
                     raise TimeoutError
-            r, c = self.world.set_agent_loc(agent, r, c)
+            # r, c = self.world.set_agent_loc(agent, r, c)
 
     def scenario_step(self):
         """

@@ -8,8 +8,8 @@ from copy import deepcopy
 
 import numpy as np
 from scipy import signal
-
-from ai_economist.foundation.base.base_env import BaseEnvironment, scenario_registry,resource_registry
+from ai_economist.foundation.components import work
+from ai_economist.foundation.base.base_env import BaseEnvironment, scenario_registry
 from ..utils import rewards, social_metrics
 
 @scenario_registry.add
@@ -216,7 +216,8 @@ class Uniform(BaseEnvironment):
         
         #Project Board
         self.project_count = 10
-
+        #generate_projcects
+        self.project = {}
 
     @property
     def energy_weight(self):
@@ -249,10 +250,9 @@ class Uniform(BaseEnvironment):
         curr_optimization_metric = {}
         # (for agents)
         for agent in self.world.agents:
-            print(agent.state["endogenous"])
             curr_optimization_metric[agent.idx] = rewards.isoelastic_coin_minus_labor(
                 coin_endowment=agent.total_endowment("Coin"),
-                total_labor=agent.state["endogenous"]["Hardness"],
+                total_labor=agent.state["endogenous"]["Skill"],
                 isoelastic_eta=self.isoelastic_eta,
                 labor_coefficient=self.energy_weight * self.energy_cost,
             )
@@ -333,8 +333,10 @@ class Uniform(BaseEnvironment):
             }
 
         resources = ["project", "time"]
-       
-
+        
+        
+        #project_id, project_difficult,project_time 
+        
         #     for resource in resources:
         #         clump = 1 - np.clip(self.clumpiness[resource], 0.0, 0.99)
 
@@ -410,7 +412,11 @@ class Uniform(BaseEnvironment):
             # Clear everything to start with
             agent.state["inventory"] = {k: 0 for k in agent.inventory.keys()}
             agent.state["escrow"] = {k: 0 for k in agent.inventory.keys()}
-            agent.state["endogenous"] = {k: 0 for k in agent.endogenous.keys()}
+            for k in agent.endogenous:
+                if k != "Timecommitment":
+                    agent.endogenous[k] = 0
+                else:
+                    agent.endogenous[k] = [0]*5
             # Add starting coin
             agent.state["inventory"]["Coin"] = float(self.starting_agent_coin)
 
@@ -446,9 +452,9 @@ class Uniform(BaseEnvironment):
         In this class of scenarios, the scenario step handles stochastic resource
         regeneration.
         """
+        #reduce the project time here 
 
         resources = ["Project", "Time"]
-
         if self.project_count < 10:
             self.project_count +=1
 
@@ -520,9 +526,6 @@ class Uniform(BaseEnvironment):
             }
             for agent in self.world.agents
         }
-        for agent in self.world.agents:
-            if agent.state["endogenous"]["Project_status"] == 1:
-                self.project_count -= 1
         # obs[self.world.planner.idx] = {
         #     "inventory-" + k: v * self.inv_scale
         #     for k, v in self.world.planner.inventory.items()

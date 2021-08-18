@@ -11,7 +11,7 @@ from ai_economist.foundation.base.base_component import (
     component_registry,
 )
 from ai_economist.foundation.entities import resource_registry
-
+import ai_economist.foundation.base.base_env as glob_env
 
 @component_registry.add
 class ContinuousDoubleAuction(BaseComponent):
@@ -72,8 +72,11 @@ class ContinuousDoubleAuction(BaseComponent):
             self.order_labor = 0.0
 
         # Each collectible resource in the world can be traded via this component
+        # self.commodities = [
+        #     r for r in self.world.resources if resource_registry.get(r).collectible
+        # ]
         self.commodities = [
-            r for r in self.world.resources if resource_registry.get(r).collectible
+            r for r in glob_env.project.keys() if glob_env.project[r]["claimed"] == -1
         ]
 
         # These get reset at the start of an episode:

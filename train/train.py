@@ -7,8 +7,8 @@ import numpy as np
 import torch
 
 from ai_economist import foundation
-from proj.config import env_config
-from proj.ppo import PPO, Memory
+from config import env_config
+from ppo import PPO, Memory
 from tutorials.utils import plotting
 
 from IPython import display
@@ -59,7 +59,7 @@ def main():
     log_dir.mkdir()
     env = foundation.make_env_instance(**env_config)
     state = env.reset()
-
+    
     if random_seed:
         torch.manual_seed(random_seed)
         env.seed(random_seed)
@@ -85,7 +85,6 @@ def main():
         for t in range(env.episode_length):
             time_step += 1
             actions = sample_random_actions(env, obs)  # Initialize dict with random actions then fill with selected values
-
             for agent_id in range(env.n_agents):
                 agent_id_str = str(agent_id)
                 memory_agent = memory[agent_id]

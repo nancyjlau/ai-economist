@@ -47,13 +47,13 @@ class Time(Resource):
 class Project(Resource):
     """Project resource"""
     name = "Project"
+    hardness = 0
     collectible = True
     def __init__(self,project_time,hardness,payment):
         self.project_time= project_time
         self.hardness = hardness
         self.payment = payment
     
-
 
 
 @resource_registry.add

@@ -9,7 +9,7 @@ Unit tests for the wood and stone scenario + basic components
 """
 
 import unittest
-
+import numpy as np
 from ai_economist import foundation
 
 
@@ -96,9 +96,8 @@ class TestEnv(unittest.TestCase):
             sorted(list(obs.keys())),
             [str(i) for i in range(create_env.env_config["n_agents"])] + ["p"],
         )
-
-        obs, reward, done, info = env.step({})
-        print(reward)
+        actions = {'0': 2, '1': 1}
+        obs, reward, done, info = env.step(actions)
         # Check that the observation, reward and info keys match
         self.assertEqual(obs.keys(), reward.keys())
         self.assertEqual(obs.keys(), info.keys())

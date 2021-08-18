@@ -19,6 +19,9 @@ from ai_economist.foundation.entities import (
     resource_registry,
 )
 
+project= {}
+for i in range(0,10):
+            project.update({i:{'project_diff':1,'project_time':90,'steps':4,'claimed':-1}})
 
 class BaseEnvironment(ABC):
     """
@@ -280,9 +283,10 @@ class BaseEnvironment(ABC):
 
         # Initialize the set of entities used in the game that's being created.
         # Coin and Labor are always included.
+        
         self._entities = {
-            "resources": ["Coin","Project"],
-            "endogenous": ["Skill","Project_time","Hardness","Payment","Project_status"],
+            "resources": ["Coin",'project'],
+            "endogenous": ["Skill","Project_count","Timecommitment"],
         }
         self._register_entities(self.required_entities)
 
@@ -300,13 +304,17 @@ class BaseEnvironment(ABC):
                 component_config = list(component_spec.values())[0]
             else:
                 raise TypeError
-            print(component_name)
             component_cls = component_registry.get(component_name)
-            print(component_cls.required_entities)
 
             self._register_entities(component_cls.required_entities)
             component_classes.append([component_cls, component_config])
-
+        self.project = {}
+        for i in range(0,10):
+            project_id = i
+            project_diff = 1
+            project_time = 10
+            self.project.update({project_id:{'project_diff':project_diff,'project_time':project_time}})
+       
         # Initialize the world object (contains agents and world map),
         # now that we know all the entities we'll use.
         self.world = World(
@@ -336,6 +344,7 @@ class BaseEnvironment(ABC):
             agent.register_inventory(self.resources)
             agent.register_endogenous(self.endogenous)
             agent.register_components(self._components)
+            print(agent.state["endogenous"])
         self.world.planner.register_inventory(self.resources)
         self.world.planner.register_components(self._components)
 
@@ -372,12 +381,12 @@ class BaseEnvironment(ABC):
                     self._entities["endogenous"].append(entity)
             else:
                 raise KeyError("Unknown entity: {}".format(entity))
-    
+   
 
 
     # Properties
     # ----------
-
+    
     @property
     def episode_length(self):
         """Length of an episode, in timesteps."""
@@ -391,7 +400,7 @@ class BaseEnvironment(ABC):
     @property
     def resources(self):
         """List of resources managed by this environment instance."""
-        return sorted(list(self._entities["resources"]))
+        return (list(self._entities["resources"]))
 
 
     @property
@@ -533,6 +542,7 @@ class BaseEnvironment(ABC):
 
     def parse_actions(self, action_dictionary):
         """Put actions into the appropriate agent's action buffer"""
+
         for agent_idx, agent_actions in action_dictionary.items():
             agent = self.get_agent(agent_idx)
             agent.parse_actions(agent_actions)
@@ -911,7 +921,7 @@ class BaseEnvironment(ABC):
             )
 
         self.timestep += 1
-
+        
         for component in self._components:
             component.component_step()
 
@@ -930,7 +940,14 @@ class BaseEnvironment(ABC):
 
         for agent in self.all_agents:
             agent.reset_actions()
-
+        
+        for i in project.keys():
+            project[i]["project_time"] -= 10 
+        for agent in self.all_agents: 
+            #NOTE: removes the previous week time commitment"
+            if agent.state["endogenous"] != {}:
+                agent.state["endogenous"]["Timecommitment"].pop(0)
+                agent.state["endogenous"]["Timecommitment"].append(0)
         if done[
             "__all__"
         ]:  # Complete the dense log and stash it as well as the metrics

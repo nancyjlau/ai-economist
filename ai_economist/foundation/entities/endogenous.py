@@ -36,25 +36,13 @@ class Skill(Endogenous):
     name = "Skill"
 
 @endogenous_registry.add
-class Project_status(Endogenous):
-    """Used to maintain the status of a project"""
-    name = "Project_status"
+class Timecommitment(Endogenous):
+    name = "Timecommitment"
 
 @endogenous_registry.add
-class Project_time(Endogenous):
-    name ="Project_time"
-
-@endogenous_registry.add
-class Hardness(Endogenous):
-    name ="Hardness"
-
-@endogenous_registry.add
-class Payment(Endogenous):
-    name = "Payment"
-@endogenous_registry.add
-class Project_id(Endogenous):
-    name = "Project_id"
-
+class Project_count(Endogenous):
+    name = "Project_count"
+    
 @endogenous_registry.add
 class Assignment_mentor(Endogenous):
     """ To track assignent mentor"""

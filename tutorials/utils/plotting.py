@@ -7,7 +7,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ai_economist.foundation import landmarks, resources
+from ai_economist.foundation import resources
 
 
 def plot_map(maps, locs, ax=None, cmap_order=None):
@@ -40,12 +40,6 @@ def plot_map(maps, locs, ax=None, cmap_order=None):
                 )
                 map_ /= max_health[entity]
                 tmp += map_
-        elif landmarks.has(entity):
-            map_ = (
-                landmarks.get(entity).color[:, None, None]
-                * np.array(maps.get(entity))[None]
-            )
-            tmp += map_
         else:
             continue
 

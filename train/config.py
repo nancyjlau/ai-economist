@@ -11,7 +11,7 @@ env_config = {
     # The order in which components reset, step, and generate obs follows their listed order below.
     'components': [
         # (1) Building houses
-        ('Build', {'skill_dist': "pareto", 'payment_max_skill_multiplier': 3}),
+        {"Work": {"time":40}},
         # (2) Trading collectible resources
         ('ContinuousDoubleAuction', {'max_num_orders': 5}),
         # (3) Movement and resource collection
@@ -24,18 +24,18 @@ env_config = {
     # (optional) kwargs that are added by the Scenario class (i.e. not defined in BaseEnvironment)
     'env_layout_file': 'quadrant_25x25_20each_30clump.txt',
     'starting_agent_coin': 10,
-    'fixed_four_skill_and_loc': True,
+    'fixed_four_skill_and_loc': False,
 
     # ===== STANDARD ARGUMENTS ======
     # kwargs that are used by every Scenario class (i.e. defined in BaseEnvironment)
-    'n_agents': 4,  # Number of non-planner agents (must be > 1)
+    'n_agents': 5,  # Number of non-planner agents (must be > 1)
     'world_size': [25, 25],  # [Height, Width] of the env world
     'episode_length': 1000,  # Number of timesteps per episode
 
     # In multi-action-mode, the policy selects an action for each action subspace (defined in component code).
     # Otherwise, the policy selects only 1 action.
     'multi_action_mode_agents': False,
-    'multi_action_mode_planner': True,
+    'multi_action_mode_planner': False,
 
     # When flattening observations, concatenate scalar & vector observations before output.
     # Otherwise, return observations with minimal processing.
