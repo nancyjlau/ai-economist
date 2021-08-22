@@ -96,7 +96,7 @@ class TestEnv(unittest.TestCase):
             sorted(list(obs.keys())),
             [str(i) for i in range(create_env.env_config["n_agents"])] + ["p"],
         )
-        actions = {'0': 2, '1': 1}
+        actions = {'0': 1, '1': 1, '2': 1, '3': 1}
         obs, reward, done, info = env.step(actions)
         # Check that the observation, reward and info keys match
         self.assertEqual(obs.keys(), reward.keys())

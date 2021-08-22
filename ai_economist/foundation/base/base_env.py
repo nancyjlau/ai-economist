@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 
 import numpy as np
-
+import pprint
 from ai_economist.foundation.agents import agent_registry
 from ai_economist.foundation.base.registrar import Registry
 from ai_economist.foundation.base.world import World
@@ -847,6 +847,9 @@ class BaseEnvironment(ABC):
             flatten_masks=self._flatten_masks,
         )
 
+        # print project board
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(project)
         return obs
 
     def step(self, actions=None, seed_state=None):

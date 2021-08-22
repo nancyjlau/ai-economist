@@ -90,7 +90,7 @@ class BaseAgent:
                 self.endogenous[entity_name] = 0
             else:
                 self.endogenous[entity_name] = [0]*5
-        print(self.endogenous)
+        #print(self.endogenous)
         self._registered_endogenous = True
 
     def _incorporate_component(self, action_name, n):
