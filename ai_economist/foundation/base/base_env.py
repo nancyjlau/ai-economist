@@ -7,7 +7,7 @@
 import random
 from abc import ABC, abstractmethod
 from copy import deepcopy
-
+import pprint
 import numpy as np
 import pprint
 from ai_economist.foundation.agents import agent_registry
@@ -21,7 +21,7 @@ from ai_economist.foundation.entities import (
 
 project= {}
 for i in range(0,10):
-            project.update({i:{'project_diff':1,'project_time':90,'steps':4,'claimed':-1}})
+            project.update({i:{'project_diff':1,'project_time':90,'steps':3,'claimed':-1,'agent_steps':0,'payment':100}})
 
 class BaseEnvironment(ABC):
     """
@@ -344,7 +344,7 @@ class BaseEnvironment(ABC):
             agent.register_inventory(self.resources)
             agent.register_endogenous(self.endogenous)
             agent.register_components(self._components)
-            print(agent.state["endogenous"])
+            
         self.world.planner.register_inventory(self.resources)
         self.world.planner.register_components(self._components)
 
@@ -713,9 +713,17 @@ class BaseEnvironment(ABC):
         }
 
     def _generate_rewards(self):
-        rew = self.compute_reward()
-        assert isinstance(rew, dict)
-        return {str(k): v for k, v in rew.items()}
+        #rew = self.compute_reward()
+        rew = {str(agent.idx): 0 for agent in self.all_agents}
+        for i in range(0,10):
+            if project[i]["claimed"] != -1:
+                if project[i]["steps"] !=0 and project[i]["agent_steps"] == 0:
+                    rew[str(project[i]["claimed"])] = project[i]["payment"]
+        # {str(k): v for k, v in rew.items()}
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(rew)
+        pp.pprint(project)
+        return rew
 
     def _finalize_logs(self):
         self._last_ep_replay_log = self._replay_log
@@ -846,10 +854,7 @@ class BaseEnvironment(ABC):
             flatten_observations=self._flatten_observations,
             flatten_masks=self._flatten_masks,
         )
-
-        # print project board
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(project)
+        print(project)
         return obs
 
     def step(self, actions=None, seed_state=None):
@@ -945,7 +950,8 @@ class BaseEnvironment(ABC):
             agent.reset_actions()
         
         for i in project.keys():
-            project[i]["project_time"] -= 10 
+            project[i]["agent_steps"] -=1
+            project[i]["steps"] -= 1 
         for agent in self.all_agents: 
             #NOTE: removes the previous week time commitment"
             if agent.state["endogenous"] != {}:

@@ -98,7 +98,7 @@ class Work(BaseComponent):
                 pass
 
             # Build! (If you can.)
-            elif action == 1:
+            elif action <= 3: # decides the number of sub-actions
                 if self.can_agent_claim_project(agent):
                     for i in glob_env.project.keys(): 
                         if glob_env.project[i]["claimed"] == -1:
@@ -106,10 +106,34 @@ class Work(BaseComponent):
                             project_time = glob_env.project[i]["project_time"]
                             j = 0
                             steps = glob_env.project[i]["steps"]
-                            for x in range(0,steps):
-                                agent.state["endogenous"]["Timecommitment"][j] += project_time/steps
-                                j += 1
-                            print(agent.state["endogenous"]["Timecommitment"])  
+                            if action == 1:    
+                                    if(len(agent.state["endogenous"]["Timecommitment"])< steps):
+                                        agent.state["endogenous"]["Timecommitment"].extend([0]*steps)
+                                    for x in range(0,steps):
+                                        temp = agent.state["endogenous"]["Timecommitment"][j] + (project_time/(steps-x))                                    
+                                        if temp > 40:
+                                            agent.state["endogenous"]["Timecommitment"][j] = 40
+                                            project_time -= project_time/(steps-x) + (temp - 40)
+                                        else:
+                                            agent.state["endogenous"]["Timecommitment"][j] += project_time/(steps-x) 
+                                            project_time -= project_time/(steps-x)    
+                                        j += 1
+                                    glob_env.project[i]["agent_steps"] = j-1
+                            if action == 2:
+                                if(len(agent.state["endogenous"]["Timecommitment"])< steps):
+                                    agent.state["endogenous"]["Timecommitment"].extend([0]*steps)
+                                while project_time >= 0:
+                                    temp_time = 40 - agent.state["endogenous"]["Timecommitment"][j]
+                                    if project_time - temp_time >= 0:
+                                        agent.state["endogenous"]['Timecommitment'][j] += temp_time
+                                    else:
+                                        agent.state["endogenous"]['Timecommitment'][j] += project_time
+                                    project_time -= temp_time
+                                    j+=1
+                                glob_env.project[i]["agent_steps"] = j
+                            elif action == 3:
+                                #max
+                                pass
                             # j = 0
                             # while project_time >= 0:
                             #     hrs_day = 40 - agent.state["endogenous"]["Timecommitment"][j]

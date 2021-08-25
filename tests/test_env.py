@@ -48,7 +48,7 @@ class CreateEnv:
                 # (1) Building houses
                 {"Work": {"time":40}},
                 # (2) Trading collectible resources
-                {"ContinuousDoubleAuction": {"max_num_orders": 5}},
+                #{"ContinuousDoubleAuction": {"max_num_orders": 5}},
                 # (3) Movement and resource collection
                 # {"Gather": {}},
             ],
@@ -98,6 +98,13 @@ class TestEnv(unittest.TestCase):
         )
         actions = {'0': 1, '1': 1, '2': 1, '3': 1}
         obs, reward, done, info = env.step(actions)
+        actions = {'0': 0, '1': 0}
+        obs, reward, done, info = env.step(actions)
+        actions = {'0': 0, '1': 1}
+        obs, reward, done, info = env.step(actions)
+        actions = {'0': 0, '1': 0}
+        obs, reward, done, info = env.step(actions)
+        print(reward)
         # Check that the observation, reward and info keys match
         self.assertEqual(obs.keys(), reward.keys())
         self.assertEqual(obs.keys(), info.keys())
