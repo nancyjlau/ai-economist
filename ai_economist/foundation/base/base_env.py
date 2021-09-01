@@ -285,8 +285,8 @@ class BaseEnvironment(ABC):
         # Coin and Labor are always included.
         
         self._entities = {
-            "resources": ["Coin",'project'],
-            "endogenous": ["Skill","Project_count","Timecommitment"],
+            "resources": ['project'],
+            "endogenous": ["Skill","Project_count","Coins","Timecommitment"],
         }
         self._register_entities(self.required_entities)
 
@@ -719,7 +719,10 @@ class BaseEnvironment(ABC):
             if project[i]["claimed"] != -1:
                 if project[i]["steps"] !=0 and project[i]["agent_steps"] == 0:
                     rew[str(project[i]["claimed"])] = project[i]["payment"]
-        # {str(k): v for k, v in rew.items()}
+        for agents in self.world.agents:
+            agents.state["endogenous"]["Coins"] += rew[str(agents.idx)]
+              
+                # {str(k): v for k, v in rew.items()}
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(rew)
         pp.pprint(project)

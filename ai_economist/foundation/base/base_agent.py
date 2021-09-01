@@ -357,6 +357,7 @@ class BaseAgent:
                 if action == 0:
                     return
                 action_name, action = self.single_action_map.get(action)
+                # print(self.single_action_map) print_action_space
                 self.set_component_action(action_name, action)
 
 
