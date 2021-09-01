@@ -6,7 +6,7 @@
 
 from ai_economist.foundation.base.base_component import component_registry
 
-from . import work, continuous_double_auction, move, redistribution
+from . import SingleAgentJob, continuous_double_auction, move, redistribution
 
 # Import files that add Component class(es) to component_registry
 # ---------------------------------------------------------------

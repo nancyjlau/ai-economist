@@ -5,11 +5,74 @@
 # or https://opensource.org/licenses/BSD-3-Clause
 
 import numpy as np
-
+import random 
 from ai_economist.foundation.agents import agent_registry
 from ai_economist.foundation.entities import resource_registry
 
 
+
+class Projectboard:
+    
+    def __init__(self, size, n_agents, time_Cap, pay_Cap, hardness_Cap,step_Cap):
+        self.size = size
+        self.n_agents = n_agents
+        self.timeCap = time_Cap
+        self.payCap = pay_Cap
+        self.hardnessCap = hardness_Cap
+        self.stepCap = step_Cap
+        self.projectList = {}
+        i = 0
+        while i < self.size:
+            randTime = random.randint(1, time_Cap)
+            randPay = random.randint(1, pay_Cap)
+            randHard = random.randint(1, hardness_Cap)
+            randstep = random.randint(1,step_Cap)            
+            self.projectList.update({i:{'project_diff':randHard,'project_time':randTime,
+                                        'steps':randstep,'agent_steps':0,
+                                        'payment':randPay,'claimed':-1}})
+            i += 1
+            self.i = i
+    
+    def repopulate(self):
+        while len(self.projectList) < self.size:
+            randTime = random.randint(1, self.timeCap)
+            randPay = random.randint(1, self.payCap)
+            randHard = random.randint(1, self.hardnessCap)
+            randstep = random.randint(1,self.stepCap)
+            self.projectList.update({self.i:{'project_diff':randHard,'project_time':randTime,
+                                        'steps':randstep,'agent_steps':0,
+                                        'payment':randPay,'claimed':-1}})
+            self.i += 1
+            
+            
+    def generate_reward(self,rew):
+        for i in self.projectList.keys():
+            if self.projectList[i]["claimed"] != -1:
+                if self.projectList[i]["steps"] !=0 and self.projectList[i]["agent_steps"] == 0:
+                    rew[str(self.projectList[i]["claimed"])] = self.projectList[i]["payment"]
+        return rew
+
+    def step(self):
+        for i in self.projectList.keys():
+            if self.projectList[i]["claimed"] != -1:
+                self.projectList[i]["agent_steps"] -= 1
+                self.projectList[i]["steps"] -=1  
+      
+    def remove_projects(self):
+        del_project_list = []
+        for i in self.projectList.keys():
+            if self.projectList[i]["claimed"] != -1:
+                if self.projectList[i]["steps"] ==0:
+                    del_project_list.append(i)
+
+        for i in del_project_list:
+            del self.projectList[i]
+    
+    def compound_step(self):
+        self.step()
+        self.remove_projects()
+        self.repopulate()
+    
 class Maps:
     """Manages the spatial configuration of the world as a set of entity maps.
 
@@ -342,7 +405,7 @@ class World:
         self.multi_action_mode_agents = bool(multi_action_mode_agents)
         self.multi_action_mode_planner = bool(multi_action_mode_planner)
         self.maps = Maps(world_size, n_agents, world_resources)
-
+        self.project_board = Projectboard(10,4,10,1000,4,100) 
         mobile_class = agent_registry.get("BasicMobileAgent")
         planner_class = agent_registry.get("BasicPlanner")
         self._agents = [

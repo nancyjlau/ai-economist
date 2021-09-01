@@ -19,9 +19,9 @@ from ai_economist.foundation.entities import (
     resource_registry,
 )
 
-project= {}
-for i in range(0,10):
-            project.update({i:{'project_diff':1,'project_time':90,'steps':3,'claimed':-1,'agent_steps':0,'payment':100}})
+# project= {}
+# for i in range(0,10):
+#             project.update({i:{'project_diff':1,'project_time':90,'steps':3,'claimed':-1,'agent_steps':0,'payment':100}})
 
 class BaseEnvironment(ABC):
     """
@@ -308,13 +308,7 @@ class BaseEnvironment(ABC):
 
             self._register_entities(component_cls.required_entities)
             component_classes.append([component_cls, component_config])
-        self.project = {}
-        for i in range(0,10):
-            project_id = i
-            project_diff = 1
-            project_time = 10
-            self.project.update({project_id:{'project_diff':project_diff,'project_time':project_time}})
-       
+        
         # Initialize the world object (contains agents and world map),
         # now that we know all the entities we'll use.
         self.world = World(
@@ -647,7 +641,7 @@ class BaseEnvironment(ABC):
         for component in self._components:
             for idx, o in component.obs().items():
                 if idx in obs:
-                    obs[idx].update({component.name + "-" + k: v for k, v in o.items()})
+                    obs[idx].update({k: v for k, v in o.items()})
                 elif idx in agent_wise_planner_obs:
                     agent_wise_planner_obs[idx].update(
                         {component.name + "-" + k: v for k, v in o.items()}
@@ -715,17 +709,12 @@ class BaseEnvironment(ABC):
     def _generate_rewards(self):
         #rew = self.compute_reward()
         rew = {str(agent.idx): 0 for agent in self.all_agents}
-        for i in range(0,10):
-            if project[i]["claimed"] != -1:
-                if project[i]["steps"] !=0 and project[i]["agent_steps"] == 0:
-                    rew[str(project[i]["claimed"])] = project[i]["payment"]
+        rew = self.world.project_board.generate_reward(rew)
         for agents in self.world.agents:
             agents.state["endogenous"]["Coins"] += rew[str(agents.idx)]
               
                 # {str(k): v for k, v in rew.items()}
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(rew)
-        pp.pprint(project)
+        print(rew)
         return rew
 
     def _finalize_logs(self):
@@ -857,7 +846,6 @@ class BaseEnvironment(ABC):
             flatten_observations=self._flatten_observations,
             flatten_masks=self._flatten_masks,
         )
-        print(project)
         return obs
 
     def step(self, actions=None, seed_state=None):
@@ -938,11 +926,11 @@ class BaseEnvironment(ABC):
 
         self.scenario_step()
 
+        rew = self._generate_rewards()
         obs = self._generate_observations(
             flatten_observations=self._flatten_observations,
             flatten_masks=self._flatten_masks,
         )
-        rew = self._generate_rewards()
         done = {"__all__": self.timestep >= self._episode_length}
         info = {k: {} for k in obs.keys()}
 
@@ -952,9 +940,11 @@ class BaseEnvironment(ABC):
         for agent in self.all_agents:
             agent.reset_actions()
         
-        for i in project.keys():
-            project[i]["agent_steps"] -=1
-            project[i]["steps"] -= 1 
+        self.world.project_board.compound_step()
+        # self.world.project_board.step()
+        # self.world.project_board.remove_projects()
+        # self.world.project_board.repopulate()
+        
         for agent in self.all_agents: 
             #NOTE: removes the previous week time commitment"
             if agent.state["endogenous"] != {}:

@@ -42,7 +42,10 @@ class Timecommitment(Endogenous):
 @endogenous_registry.add
 class Project_count(Endogenous):
     name = "Project_count"
-    
+
+@endogenous_registry.add
+class Coins(Endogenous):
+    name = 'Coins'
 @endogenous_registry.add
 class Assignment_mentor(Endogenous):
     """ To track assignent mentor"""

@@ -13,14 +13,14 @@ from ai_economist.foundation.base.base_component import (
 import ai_economist.foundation.base.base_env as glob_env
 
 @component_registry.add
-class Work(BaseComponent):
+class SingleAgentJob (BaseComponent):
     """
     Allows mobile agnets to decide to whether to work on a project based on the
     time and the deadline of the project.
 
     """
-    name= "Work"
-    component_type= "Work"
+    name= "SingleAgentJob"
+    component_type= "SingleAgentJob"
     required_entities = ["Time", "Project","Skill"]
     agent_subclasses = ["BasicMobileAgent"]
     def __init__(
@@ -95,7 +95,7 @@ class Work(BaseComponent):
         Convert stone+wood to house+coin for agents that choose to build and can.
         """
         world = self.world
-        project_complete = []
+        
         # Apply any building actions taken by the mobile agents
         for agent in world.get_random_order_agents():
 
@@ -111,25 +111,26 @@ class Work(BaseComponent):
 
             # Build! (If you can.)
             elif action <= 40: #
-                    for i in glob_env.project.keys(): 
-                        if glob_env.project[i]["claimed"] == -1:
-                            project_time = glob_env.project[i]["project_time"]
+                    for i in world.project_board.projectList.keys():
+                        if world.project_board.projectList[i]["claimed"] == -1:
+                            project_time = world.project_board.projectList[i]["project_time"]
                             if self.can_agent_claim_project(agent,action):
                                 sub_action_space = range(1,40,self.week_hrs)
                                 timecommit_len = len(agent.state["endogenous"]["Timecommitment"])-1
                                 if (project_time//action > timecommit_len):
                                     agent.state["endogenous"]["Timecommitment"].extend([0]*((project_time//action)-timecommit_len))
-                                    j = 0
-                                    while(project_time >= 0):
-                                        if action < project_time:
-                                            agent.state["endogenous"]["Timecommitment"][j] += sub_action_space[action]
-                                        else:
-                                            agent.state["endogenous"]["Timecommitment"][j] += project_time
-                                        project_time -= action
-                                        j += 1
-                                    glob_env.project[i]["claimed"] = agent.idx
-                                    print(agent.state["endogenous"])
-                                    break
+                                j = 0
+                                while(project_time >= 0):
+                                    if action < project_time:
+                                        agent.state["endogenous"]["Timecommitment"][j] += sub_action_space[action]
+                                    else:
+                                        agent.state["endogenous"]["Timecommitment"][j] += project_time
+                                    project_time -= action
+                                    j += 1
+                                world.project_board.projectList[i]["claimed"] = agent.idx
+                                world.project_board.projectList[i]["agent_steps"] = j
+                                    # print(agent.state["endogenous"])
+                                break
                 # if self.project_done(agent):
                 #     # Upskill the agent
                 #     agent.state["endogenous"]["Skill"] *= agent.state["endogenous"]["Project_detail"].hardness
@@ -147,7 +148,7 @@ class Work(BaseComponent):
 
                 raise ValueError
 
-        self.total_project.append(project_complete)
+       
 
     def generate_observations(self):
         """
@@ -160,36 +161,35 @@ class Work(BaseComponent):
         obs_dict = dict()
         for agent in self.world.agents:
             obs_dict[agent.idx] = {
-                "build_payment": agent.state["endogenous"],
-                "build_skill": self.sampled_skills[agent.idx],
+                "coins": agent.state["endogenous"]["Coins"],
+                "skill": agent.state["endogenous"]["Skill"],
+                "masked_action": self.generate_masks(agent),
+                "project_board": self.world.project_board.projectList
             }
 
         return obs_dict
 
-    def generate_masks(self, completions=0):
+    def generate_masks(self,agent,completions=0):
         """
         See base_component.py for detailed description.
 
         Prevent building only if a landmark already occupies the agent's location.
         """
+        action_mask = [0]*(40//self.week_hrs)
+        if agent.state["endogenous"]["Timecommitment"][0] == 0:
+            temp = 0
+        else:
+            temp = 40 - agent.state["endogenous"]["Timecommitment"][0]
+            
+        for i in range(0,len(action_mask)):
+            if temp < i*(40//self.week_hrs):
+                action_mask[i] = 1
 
-        masks = {}
-        for agent in self.world.agent:
-            action_mask = [0]*(40//self.week_hrs)
-            if agent.state["endogenous"]["Timecommitment"][0] == 0:
-                temp = 0
-            else:
-                temp = 40 - agent.state["endogenous"]["Timecommitment"][0]
-                
-            for i in range(0,len(action_mask)):
-                if temp < i*(40//self.week_hrs):
-                    action_mask[i] = 1
-            masks[agent.idx] = action_mask
         # Mobile agents' build action is masked if they cannot build with their
         # current location and/or endowment
         # for agent in self.world.agents:
         #     masks[agent.idx] = np.array([self.project_done(agent)])
-        return masks
+        return action_mask
 
     # For non-required customization
     # ------------------------------

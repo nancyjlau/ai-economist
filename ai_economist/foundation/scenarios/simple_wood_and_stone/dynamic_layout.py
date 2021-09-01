@@ -8,7 +8,7 @@ from copy import deepcopy
 
 import numpy as np
 from scipy import signal
-from ai_economist.foundation.components import work
+from ai_economist.foundation.components import SingleAgentJob
 from ai_economist.foundation.base.base_env import BaseEnvironment, scenario_registry
 from ..utils import rewards, social_metrics
 
