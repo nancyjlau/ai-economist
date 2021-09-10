@@ -50,16 +50,17 @@ class SingleAgentJob (BaseComponent):
 
     def can_agent_claim_project(self,agent,action):
         
-        action_mask = [0]*(40//self.week_hrs)
-        if agent.state["endogenous"]["Timecommitment"][0] != 0:
-            temp = 40 - agent.state["endogenous"]["Timecommitment"][0]
-        else:
-            temp=0
-        for i in range(0,len(action_mask)):
-            if temp < i*(40//self.week_hrs):
-                action_mask[i] = 1
+        # action_mask = [0]*((40//self.week_hrs)*4)
+        # if agent.state["endogenous"]["Timecommitment"][1] != 0:
+        #     temp = 40 - agent.state["endogenous"]["Timecommitment"][1]
+        # else:
+        #     temp=0
+        
+        # for i in range(0,len(action_mask)):
+        #     if (i%20)*self.week_hrs <= temp :
+        #         action_mask[i] = 0
 
-        if action_mask [action] == 1:
+        if self.action_mask [action] == 0:
             return True
         else:
             return False
@@ -73,7 +74,7 @@ class SingleAgentJob (BaseComponent):
         """
         # This component adds 1 action that mobile agents can take: build a house
         if agent_cls_name == "BasicMobileAgent":
-            return 40
+            return ((40//self.week_hrs)*4)
 
         return None
     def get_additional_state_fields(self, agent_cls_name):
@@ -169,27 +170,30 @@ class SingleAgentJob (BaseComponent):
 
         return obs_dict
 
-    def generate_masks(self,agent,completions=0):
+    def generate_masks(self,agent):
         """
         See base_component.py for detailed description.
 
         Prevent building only if a landmark already occupies the agent's location.
         """
-        action_mask = [0]*(40//self.week_hrs)
-        if agent.state["endogenous"]["Timecommitment"][0] == 0:
-            temp = 0
+        self.action_mask = [0]*((40//self.week_hrs)*4)
+        if agent.state["endogenous"]["Timecommitment"][1] != 0:
+            temp = 40 - agent.state["endogenous"]["Timecommitment"][1]
         else:
-            temp = 40 - agent.state["endogenous"]["Timecommitment"][0]
-            
-        for i in range(0,len(action_mask)):
-            if temp < i*(40//self.week_hrs):
-                action_mask[i] = 1
+            temp= 40
 
+        for i in range(0,len(self.action_mask)):
+            if temp >=  (i%20)*self.week_hrs:
+                self.action_mask[i] = 0
+            else:
+                self.action_mask[i] = 1
+
+        
         # Mobile agents' build action is masked if they cannot build with their
         # current location and/or endowment
         # for agent in self.world.agents:
         #     masks[agent.idx] = np.array([self.project_done(agent)])
-        return action_mask
+        return self.action_mask
 
     # For non-required customization
     # ------------------------------
