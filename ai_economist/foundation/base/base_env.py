@@ -334,9 +334,10 @@ class BaseEnvironment(ABC):
 
         # Register the components with the agents
         # to finish setting up their state/action spaces.
+        self.agents_skill = [1,2,3,4]
         for agent in self.world.agents:
             agent.register_inventory(self.resources)
-            agent.register_endogenous(self.endogenous)
+            agent.register_endogenous(self.endogenous,self.agents_skill[agent.idx])
             agent.register_components(self._components)
             
         self.world.planner.register_inventory(self.resources)

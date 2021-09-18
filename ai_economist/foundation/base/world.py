@@ -21,30 +21,35 @@ class Projectboard:
         self.hardnessCap = hardness_Cap
         self.stepCap = step_Cap
         self.projectList = {}
-        i = 0
-        while i < self.size:
-            randTime = random.randint(1, time_Cap)
-            randPay = random.randint(1, pay_Cap)
-            randHard = random.randint(1, hardness_Cap)
-            randstep = random.randint(1,step_Cap)            
-            self.projectList.update({i:{'project_diff':randHard,'project_time':randTime,
-                                        'steps':randstep,'agent_steps':0,
-                                        'payment':randPay,'claimed':-1}})
-            i += 1
-            self.i = i
-    
+        self.project_count ={i:0 for i in range(1,hardness_Cap,1)}
+        self.i = 0
+        for k,v in self.project_count.items():
+            while self.project_count[k] != size:
+                randTime = time_Cap*(5-k)
+                randPay = pay_Cap*k
+                randHard = k
+                randstep = step_Cap*k            
+                self.projectList.update({self.i:{'hardness':randHard,'project_time':randTime,
+                                            'steps':randstep,'agent_steps':0,
+                                            'payment':randPay,'claimed':-1}})
+                self.project_count[k] += 1
+                self.i +=1
+        
     def repopulate(self):
-        while len(self.projectList) < self.size:
-            randTime = random.randint(1, self.timeCap)
-            randPay = random.randint(1, self.payCap)
-            randHard = random.randint(1, self.hardnessCap)
-            randstep = random.randint(1,self.stepCap)
-            self.projectList.update({self.i:{'project_diff':randHard,'project_time':randTime,
-                                        'steps':randstep,'agent_steps':0,
-                                        'payment':randPay,'claimed':-1}})
-            self.i += 1
-            
-            
+        for k,v in self.project_count.items():
+            while self.project_count[k] != self.size:
+                randTime = self.timeCap*(5-k)
+                randPay = self.payCap*k
+                randHard = k
+                randstep = self.stepCap*k            
+                self.projectList.update({self.i:{'hardness':randHard,'project_time':randTime,
+                                            'steps':randstep,'agent_steps':0,
+                                            'payment':randPay,'claimed':-1}})
+                self.project_count[k] += 1
+                
+                self.i += 1
+    
+                      
     def generate_reward(self,rew):
         for i in self.projectList.keys():
             if self.projectList[i]["claimed"] != -1:
@@ -405,7 +410,7 @@ class World:
         self.multi_action_mode_agents = bool(multi_action_mode_agents)
         self.multi_action_mode_planner = bool(multi_action_mode_planner)
         self.maps = Maps(world_size, n_agents, world_resources)
-        self.project_board = Projectboard(10,4,10,1000,4,100) 
+        self.project_board = Projectboard(2,4,10,1000,5,100) 
         mobile_class = agent_registry.get("BasicMobileAgent")
         planner_class = agent_registry.get("BasicPlanner")
         self._agents = [

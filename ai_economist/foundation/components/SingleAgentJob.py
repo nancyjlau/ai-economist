@@ -5,7 +5,7 @@
 # or https://opensource.org/licenses/BSD-3-Clause
 
 import numpy as np
-
+import math
 from ai_economist.foundation.base.base_component import (
     BaseComponent,
     component_registry,
@@ -111,27 +111,31 @@ class SingleAgentJob (BaseComponent):
                 pass
 
             # Build! (If you can.)
-            elif action <= 40: #
+            elif action <= 80: #
+                    max_time = 40/self.week_hrs
+                    action_project = math.ceil(action/20)
                     for i in world.project_board.projectList.keys():
-                        if world.project_board.projectList[i]["claimed"] == -1:
-                            project_time = world.project_board.projectList[i]["project_time"]
+                        if world.project_board.projectList[i]["claimed"] == -1 and action_project == world.project_board.projectList[i]["hardness"]:
+                            project_time = world.project_board.projectList[i]["project_time"]/agent.state["endogenous"]["Skill"]
                             if self.can_agent_claim_project(agent,action):
-                                sub_action_space = range(1,40,self.week_hrs)
+                                action = max_time if action%(max_time) == 0 else action%max_time
                                 timecommit_len = len(agent.state["endogenous"]["Timecommitment"])-1
                                 if (project_time//action > timecommit_len):
-                                    agent.state["endogenous"]["Timecommitment"].extend([0]*((project_time//action)-timecommit_len))
+                                    agent.state["endogenous"]["Timecommitment"].extend([0]*(int(project_time//action)-timecommit_len))
                                 j = 0
                                 while(project_time >= 0):
                                     if action < project_time:
-                                        agent.state["endogenous"]["Timecommitment"][j] += sub_action_space[action]
+                                        agent.state["endogenous"]["Timecommitment"][j] += action*self.week_hrs
                                     else:
                                         agent.state["endogenous"]["Timecommitment"][j] += project_time
                                     project_time -= action
                                     j += 1
                                 world.project_board.projectList[i]["claimed"] = agent.idx
                                 world.project_board.projectList[i]["agent_steps"] = j
-                                    # print(agent.state["endogenous"])
+                                world.project_board.project_count[action_project] -= 1
                                 break
+                                
+                                
                 # if self.project_done(agent):
                 #     # Upskill the agent
                 #     agent.state["endogenous"]["Skill"] *= agent.state["endogenous"]["Project_detail"].hardness

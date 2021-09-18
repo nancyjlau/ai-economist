@@ -82,14 +82,17 @@ class BaseAgent:
             self.inventory[entity_name] = 0
         self._registered_inventory = True
 
-    def register_endogenous(self, endogenous):
+    def register_endogenous(self, endogenous,agent_skill):
         """Used during environment construction to populate endogenous state fields."""
         assert not self._registered_endogenous
+
         for entity_name in endogenous:
-            if entity_name != "Timecommitment":
-                self.endogenous[entity_name] = 0
-            else:
+            if entity_name == "Timecommitment":
                 self.endogenous[entity_name] = [0]*5
+            elif entity_name == "Skill":
+                self.endogenous[entity_name] = agent_skill
+            else:
+                self.endogenous[entity_name] = 0
         #print(self.endogenous)
         self._registered_endogenous = True
 

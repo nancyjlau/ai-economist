@@ -412,11 +412,11 @@ class Uniform(BaseEnvironment):
             # Clear everything to start with
             agent.state["inventory"] = {k: 0 for k in agent.inventory.keys()}
             agent.state["escrow"] = {k: 0 for k in agent.inventory.keys()}
-            for k in agent.endogenous:
-                if k != "Timecommitment":
-                    agent.endogenous[k] = 0
-                else:
+            for k in agent.endogenous:                
+                if k == "Timecommitment":
                     agent.endogenous[k] = [0]*5
+                elif k != "Skill":
+                    agent.endogenous[k] = 0
             # Add starting coin
             agent.state["inventory"]["Coin"] = float(self.starting_agent_coin)
 
