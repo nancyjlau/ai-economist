@@ -376,94 +376,94 @@ class LayoutFromFile(BaseEnvironment):
         config) as well as the inventory of each of the mobile agents.
         """
         obs = {}
-        curr_map = self.world.maps.state
+        # curr_map = self.world.maps.state
 
-        owner_map = self.world.maps.owner_state
-        loc_map = self.world.loc_map
-        agent_idx_maps = np.concatenate([owner_map, loc_map[None, :, :]], axis=0)
-        agent_idx_maps += 2
-        agent_idx_maps[agent_idx_maps == 1] = 0
+        # owner_map = self.world.maps.owner_state
+        # loc_map = self.world.loc_map
+        # agent_idx_maps = np.concatenate([owner_map, loc_map[None, :, :]], axis=0)
+        # agent_idx_maps += 2
+        # agent_idx_maps[agent_idx_maps == 1] = 0
 
-        agent_locs = {
-            str(agent.idx): {
-                "loc-row": agent.loc[0] / self.world_size[0],
-                "loc-col": agent.loc[1] / self.world_size[1],
-            }
-            for agent in self.world.agents
-        }
-        agent_invs = {
-            str(agent.idx): {
-                "inventory-" + k: v * self.inv_scale for k, v in agent.inventory.items()
-            }
-            for agent in self.world.agents
-        }
+        # agent_locs = {
+        #     str(agent.idx): {
+        #         "loc-row": agent.loc[0] / self.world_size[0],
+        #         "loc-col": agent.loc[1] / self.world_size[1],
+        #     }
+        #     for agent in self.world.agents
+        # }
+        # agent_invs = {
+        #     str(agent.idx): {
+        #         "inventory-" + k: v * self.inv_scale for k, v in agent.inventory.items()
+        #     }
+        #     for agent in self.world.agents
+        # }
 
-        obs[self.world.planner.idx] = {
-            "inventory-" + k: v * self.inv_scale
-            for k, v in self.world.planner.inventory.items()
-        }
-        if self._planner_gets_spatial_info:
-            obs[self.world.planner.idx].update(
-                dict(map=curr_map, idx_map=agent_idx_maps)
-            )
+        # obs[self.world.planner.idx] = {
+        #     "inventory-" + k: v * self.inv_scale
+        #     for k, v in self.world.planner.inventory.items()
+        # }
+        # if self._planner_gets_spatial_info:
+        #     obs[self.world.planner.idx].update(
+        #         dict(map=curr_map, idx_map=agent_idx_maps)
+        #     )
 
-        # Mobile agents see the full map. Convey location info via one-hot map channels.
-        if self._full_observability:
-            for agent in self.world.agents:
-                my_map = np.array(agent_idx_maps)
-                my_map[my_map == int(agent.idx) + 2] = 1
-                sidx = str(agent.idx)
-                obs[sidx] = {
-                    "map": curr_map,
-                    "idx_map": my_map,
-                }
-                obs[sidx].update(agent_invs[sidx])
+        # # Mobile agents see the full map. Convey location info via one-hot map channels.
+        # if self._full_observability:
+        #     for agent in self.world.agents:
+        #         my_map = np.array(agent_idx_maps)
+        #         my_map[my_map == int(agent.idx) + 2] = 1
+        #         sidx = str(agent.idx)
+        #         obs[sidx] = {
+        #             "map": curr_map,
+        #             "idx_map": my_map,
+        #         }
+        #         obs[sidx].update(agent_invs[sidx])
 
-        # Mobile agents only see within a window around their position
-        else:
-            w = (
-                self._mobile_agent_observation_range
-            )  # View halfwidth (only applicable without full observability)
+        # # Mobile agents only see within a window around their position
+        # else:
+        #     w = (
+        #         self._mobile_agent_observation_range
+        #     )  # View halfwidth (only applicable without full observability)
 
-            padded_map = np.pad(
-                curr_map,
-                [(0, 1), (w, w), (w, w)],
-                mode="constant",
-                constant_values=[(0, 1), (0, 0), (0, 0)],
-            )
+        #     padded_map = np.pad(
+        #         curr_map,
+        #         [(0, 1), (w, w), (w, w)],
+        #         mode="constant",
+        #         constant_values=[(0, 1), (0, 0), (0, 0)],
+        #     )
 
-            padded_idx = np.pad(
-                agent_idx_maps,
-                [(0, 0), (w, w), (w, w)],
-                mode="constant",
-                constant_values=[(0, 0), (0, 0), (0, 0)],
-            )
+        #     padded_idx = np.pad(
+        #         agent_idx_maps,
+        #         [(0, 0), (w, w), (w, w)],
+        #         mode="constant",
+        #         constant_values=[(0, 0), (0, 0), (0, 0)],
+        #     )
 
-            for agent in self.world.agents:
-                r, c = [c + w for c in agent.loc]
-                visible_map = padded_map[
-                    :, (r - w) : (r + w + 1), (c - w) : (c + w + 1)
-                ]
-                visible_idx = np.array(
-                    padded_idx[:, (r - w) : (r + w + 1), (c - w) : (c + w + 1)]
-                )
+        #     for agent in self.world.agents:
+        #         r, c = [c + w for c in agent.loc]
+        #         visible_map = padded_map[
+        #             :, (r - w) : (r + w + 1), (c - w) : (c + w + 1)
+        #         ]
+        #         visible_idx = np.array(
+        #             padded_idx[:, (r - w) : (r + w + 1), (c - w) : (c + w + 1)]
+        #         )
 
-                visible_idx[visible_idx == int(agent.idx) + 2] = 1
+        #         visible_idx[visible_idx == int(agent.idx) + 2] = 1
 
-                sidx = str(agent.idx)
+        #         sidx = str(agent.idx)
 
-                obs[sidx] = {
-                    "map": visible_map,
-                    "idx_map": visible_idx,
-                }
-                obs[sidx].update(agent_locs[sidx])
-                obs[sidx].update(agent_invs[sidx])
+        #         obs[sidx] = {
+        #             "map": visible_map,
+        #             "idx_map": visible_idx,
+        #         }
+        #         obs[sidx].update(agent_locs[sidx])
+        #         obs[sidx].update(agent_invs[sidx])
 
-                # Agent-wise planner info (gets crunched into the planner obs in the
-                # base scenario code)
-                obs["p" + sidx] = agent_invs[sidx]
-                if self._planner_gets_spatial_info:
-                    obs["p" + sidx].update(agent_locs[sidx])
+        #         # Agent-wise planner info (gets crunched into the planner obs in the
+        #         # base scenario code)
+        #         obs["p" + sidx] = agent_invs[sidx]
+        #         if self._planner_gets_spatial_info:
+        #             obs["p" + sidx].update(agent_locs[sidx])
 
         return obs
 

@@ -4,30 +4,32 @@
 # For full license text, see the LICENSE file in the repo root
 # or https://opensource.org/licenses/BSD-3-Clause
 
-import numpy as np
 import math
+import numpy as np
 from ai_economist.foundation.base.base_component import (
     BaseComponent,
     component_registry,
 )
-import ai_economist.foundation.base.base_env as glob_env
+
 
 @component_registry.add
-class SingleAgentJob (BaseComponent):
+class SingleAgentJob(BaseComponent):
     """
     Allows mobile agnets to decide to whether to work on a project based on the
     time and the deadline of the project.
 
     """
-    name= "SingleAgentJob"
-    component_type= "SingleAgentJob"
-    required_entities = ["Time", "Project","Skill"]
+
+    name = "SingleAgentJob"
+    component_type = "SingleAgentJob"
+    required_entities = ["Time", "Project", "Skill"]
     agent_subclasses = ["BasicMobileAgent"]
+
     def __init__(
         self,
         *base_component_args,
-         time,
-         week_hrs,
+        time,
+        week_hrs,
         skill_dist="none",
         **base_component_kwargs
     ):
@@ -48,24 +50,23 @@ class SingleAgentJob (BaseComponent):
         self.skill_dist = skill_dist
         self.week_hrs = week_hrs
 
-    def can_agent_claim_project(self,agent,action):
-        
+    def can_agent_claim_project(self, action):
+
         # action_mask = [0]*((40//self.week_hrs)*4)
         # if agent.state["endogenous"]["Timecommitment"][1] != 0:
         #     temp = 40 - agent.state["endogenous"]["Timecommitment"][1]
         # else:
         #     temp=0
-        
+
         # for i in range(0,len(action_mask)):
         #     if (i%20)*self.week_hrs <= temp :
         #         action_mask[i] = 0
 
-        if self.action_mask [action] == 0:
+        if self.action_mask[action] == 0:
             return True
         else:
             return False
- 
-    
+
     def get_n_actions(self, agent_cls_name):
         """
         See base_component.py for detailed description.
@@ -74,9 +75,10 @@ class SingleAgentJob (BaseComponent):
         """
         # This component adds 1 action that mobile agents can take: build a house
         if agent_cls_name == "BasicMobileAgent":
-            return ((40//self.week_hrs)*4)
+            return (40 // self.week_hrs) * 4
 
         return None
+
     def get_additional_state_fields(self, agent_cls_name):
         """
         See base_component.py for detailed description.
@@ -96,7 +98,7 @@ class SingleAgentJob (BaseComponent):
         Convert stone+wood to house+coin for agents that choose to build and can.
         """
         world = self.world
-        
+
         # Apply any building actions taken by the mobile agents
         for agent in world.get_random_order_agents():
 
@@ -111,49 +113,66 @@ class SingleAgentJob (BaseComponent):
                 pass
 
             # Build! (If you can.)
-            elif action <= 80: #
-                    max_time = 40/self.week_hrs
-                    action_project = math.ceil(action/20)
-                    for i in world.project_board.projectList.keys():
-                        if world.project_board.projectList[i]["claimed"] == -1 and action_project == world.project_board.projectList[i]["hardness"]:
-                            project_time = world.project_board.projectList[i]["project_time"]/agent.state["endogenous"]["Skill"]
-                            if self.can_agent_claim_project(agent,action):
-                                action = max_time if action%(max_time) == 0 else action%max_time
-                                timecommit_len = len(agent.state["endogenous"]["Timecommitment"])-1
-                                if (project_time//action > timecommit_len):
-                                    agent.state["endogenous"]["Timecommitment"].extend([0]*(int(project_time//action)-timecommit_len))
-                                j = 0
-                                while(project_time >= 0):
-                                    if action < project_time:
-                                        agent.state["endogenous"]["Timecommitment"][j] += action*self.week_hrs
-                                    else:
-                                        agent.state["endogenous"]["Timecommitment"][j] += project_time
-                                    project_time -= action
-                                    j += 1
-                                world.project_board.projectList[i]["claimed"] = agent.idx
-                                world.project_board.projectList[i]["agent_steps"] = j
-                                world.project_board.project_count[action_project] -= 1
-                                break
-                                
-                                
-                # if self.project_done(agent):
-                #     # Upskill the agent
-                #     agent.state["endogenous"]["Skill"] *= agent.state["endogenous"]["Project_detail"].hardness
-                #     # Receive payment for the project
-                #     agent.state["inventory"]["Coin"] += agent.state["Payment"]
-                #     project_complete.append(
-                #         {
-                #             "worker": agent.idx,
-                #             "income": float(10),
-                #             "skill_": float(agent.state["endogenous"]["Skill"])
-                #         }
-                #     )
+            elif action <= 80:  #
+                max_time = 40 / self.week_hrs
+                action_project = math.ceil(action / 20)
+                for i in world.project_board.projectList.keys():
+                    if (
+                        world.project_board.projectList[i]["claimed"] == -1
+                        and action_project
+                        == world.project_board.projectList[i]["hardness"]
+                    ):
+                        project_time = (
+                            world.project_board.projectList[i]["project_time"]
+                            / agent.state["endogenous"]["Skill"]
+                        )
+                        if self.can_agent_claim_project(action):
+                            action = (
+                                max_time
+                                if action % (max_time) == 0
+                                else action % max_time
+                            )
+                            timecommit_len = (
+                                len(agent.state["endogenous"]["Timecommitment"]) - 1
+                            )
+                            if project_time // action > timecommit_len:
+                                agent.state["endogenous"]["Timecommitment"].extend(
+                                    [0] * (int(project_time // action) - timecommit_len)
+                                )
+                            j = 0
+                            while project_time >= 0:
+                                if action < project_time:
+                                    agent.state["endogenous"]["Timecommitment"][j] += (
+                                        action * self.week_hrs
+                                    )
+                                else:
+                                    agent.state["endogenous"]["Timecommitment"][
+                                        j
+                                    ] += project_time
+                                project_time -= action
+                                j += 1
+                            world.project_board.projectList[i]["claimed"] = agent.idx
+                            world.project_board.projectList[i]["agent_steps"] = j
+                            world.project_board.project_count[action_project] -= 1
+
+                            break
+
+            # if self.project_done(agent):
+            #     # Upskill the agent
+            #     agent.state["endogenous"]["Skill"] *= agent.state["endogenous"]["Project_detail"].hardness
+            #     # Receive payment for the project
+            #     agent.state["inventory"]["Coin"] += agent.state["Payment"]
+            #     project_complete.append(
+            #         {
+            #             "worker": agent.idx,
+            #             "income": float(10),
+            #             "skill_": float(agent.state["endogenous"]["Skill"])
+            #         }
+            #     )
 
             else:
 
                 raise ValueError
-
-       
 
     def generate_observations(self):
         """
@@ -165,34 +184,35 @@ class SingleAgentJob (BaseComponent):
 
         obs_dict = dict()
         for agent in self.world.agents:
+            project_counts = np.fromiter(self.world.project_board.project_count.values(),dtype=np.int64)
             obs_dict[agent.idx] = {
-                "coins": agent.state["endogenous"]["Coins"],
-                "skill": agent.state["endogenous"]["Skill"],
-                "masked_action": self.generate_masks(agent),
-                "project_board": self.world.project_board.projectList
+                # "coins": np.array(agent.state["endogenous"]["Coins"]),
+                 "skill": np.array(agent.state["endogenous"]["Skill"]),
+                 "project_count": project_counts,
+                 "masked_action": np.array(self.generate_masks(agent)),
+                 
             }
-
         return obs_dict
 
-    def generate_masks(self,agent):
+    def generate_masks(self, agent):
         """
         See base_component.py for detailed description.
 
         Prevent building only if a landmark already occupies the agent's location.
         """
-        self.action_mask = [0]*((40//self.week_hrs)*4)
+        self.action_mask = [0] * ((40 // self.week_hrs) * 4)
+        
         if agent.state["endogenous"]["Timecommitment"][1] != 0:
             temp = 40 - agent.state["endogenous"]["Timecommitment"][1]
         else:
-            temp= 40
+            temp = 40
 
-        for i in range(0,len(self.action_mask)):
-            if temp >=  (i%20)*self.week_hrs:
+        for i in range(0, len(self.action_mask)):
+            if temp >= (i % 20) * self.week_hrs:
                 self.action_mask[i] = 0
             else:
                 self.action_mask[i] = 1
 
-        
         # Mobile agents' build action is masked if they cannot build with their
         # current location and/or endowment
         # for agent in self.world.agents:
@@ -272,10 +292,6 @@ class SingleAgentJob (BaseComponent):
         """
         return self.total_project
 
-        
-
-
-       
 
 # @component_registry.add
 # class Build(BaseComponent):
@@ -306,7 +322,7 @@ class SingleAgentJob (BaseComponent):
 
 #     def __init__(
 #         self,
-#         *base_component_args,   
+#         *base_component_args,
 #         resource_cost = {"Wood": 1, "Stone": 1},
 #         skill_multiplier=1,
 #         skill_dist="none",

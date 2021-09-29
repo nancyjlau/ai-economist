@@ -114,6 +114,7 @@ class BaseAgent:
                     action_name,
                     action_n,
                 ]
+            
 
     def register_components(self, components):
         """Used during environment construction to set up state/action spaces."""
@@ -359,6 +360,7 @@ class BaseAgent:
                 # Universal NO-OP
                 if action == 0:
                     return
+                
                 action_name, action = self.single_action_map.get(action)
                 # print(self.single_action_map) print_action_space
                 self.set_component_action(action_name, action)

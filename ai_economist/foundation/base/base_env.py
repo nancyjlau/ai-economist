@@ -343,6 +343,7 @@ class BaseEnvironment(ABC):
         self.world.planner.register_inventory(self.resources)
         self.world.planner.register_components(self._components)
 
+        
         self._agent_lookup = {str(agent.idx): agent for agent in self.all_agents}
 
         self.timestep = 0
@@ -406,7 +407,7 @@ class BaseEnvironment(ABC):
     @property
     def all_agents(self):
         """List of mobile agents and the planner agent."""
-        return self.world.agents + [self.world.planner]
+        return self.world.agents  # + [self.world.planner]
 
     @property
     def previous_episode_metrics(self):
@@ -537,7 +538,7 @@ class BaseEnvironment(ABC):
 
     def parse_actions(self, action_dictionary):
         """Put actions into the appropriate agent's action buffer"""
-
+        
         for agent_idx, agent_actions in action_dictionary.items():
             agent = self.get_agent(agent_idx)
             agent.parse_actions(agent_actions)
@@ -588,6 +589,7 @@ class BaseEnvironment(ABC):
             to_flatten = [
                 [obs_dict[k]] if wrap_as_list[k] else obs_dict[k] for k in flatten
             ]
+            print(to_flatten)
             try:
                 new_obs["flat"] = np.concatenate(to_flatten).astype(np.float32)
             except ValueError:
@@ -620,6 +622,7 @@ class BaseEnvironment(ABC):
 
         # Initialize empty observations
         obs = {str(agent.idx): {} for agent in self.all_agents}
+        
         agent_wise_planner_obs = {
             "p" + str(agent.idx): {} for agent in self.world.agents
         }
@@ -715,12 +718,20 @@ class BaseEnvironment(ABC):
             agents.state["endogenous"]["Coins"] += rew[str(agents.idx)]
               
                 # {str(k): v for k, v in rew.items()}
-        print(rew)
+        
         return rew
+
+    def _upskill(self,agent):
+        
+        for k,v in self.world.project_board.projectList.items():
+            if self.world.project_board.projectList[k]["claimed"] == agent.idx:
+                if self.world.project_board.projectList[k]["agent_steps"] == 0:
+                    agent.state["endogenous"]["Skill"] += (self.world.project_board.projectList[k]["hardness"]/agent.state["endogenous"]["Skill"])*(0.1)
+        
 
     def _finalize_logs(self):
         self._last_ep_replay_log = self._replay_log
-        self._last_ep_metrics = self.metrics
+        # self._last_ep_metrics = self.metrics
 
         if not self._dense_log_this_episode:
             return
@@ -926,7 +937,12 @@ class BaseEnvironment(ABC):
             component.component_step()
 
         self.scenario_step()
-
+        self.world.project_board.step()
+        
+        #upskilling
+        # for agent in self.all_agents:
+        #     self._upskill(agent)
+        
         rew = self._generate_rewards()
         obs = self._generate_observations(
             flatten_observations=self._flatten_observations,
@@ -941,10 +957,9 @@ class BaseEnvironment(ABC):
         for agent in self.all_agents:
             agent.reset_actions()
         
-        self.world.project_board.compound_step()
-        # self.world.project_board.step()
-        # self.world.project_board.remove_projects()
-        # self.world.project_board.repopulate()
+        
+        self.world.project_board.remove_projects()
+        self.world.project_board.repopulate()
         
         for agent in self.all_agents: 
             #NOTE: removes the previous week time commitment"
