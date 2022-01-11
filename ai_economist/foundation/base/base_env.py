@@ -911,12 +911,9 @@ class BaseEnvironment(ABC):
             )
             np.random.set_state(seed_state)  # resets back to previous randomized state before changes
 
-            # assuming above in line 912 works like this?
-            # hypothetical situation
-            # 1. simulate agent stuff
-            # 2. randomize the agent stuff so it's fair
-            # 3. do stuff with it 
-            # 4. set it back to the same step 2 randomized state before anything happened
+            # i think check if the seed_state is completely random and not repeated?
+            # since there needs to be a set of agent models for each random seed 
+            # log the seed_states into csv/txt file?
 
         self._replay_log["step"].append(
             dict(actions=actions, seed_state=np.random.get_state())
