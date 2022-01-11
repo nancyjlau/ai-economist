@@ -896,12 +896,12 @@ class BaseEnvironment(ABC):
                 with the same keys as obs and rew.
         """
         if actions is not None:
-            assert isinstance(actions, dict)
-            self.parse_actions(actions)
+            assert isinstance(actions, dict) # check if in class
+            self.parse_actions(actions)      # put actions in agent action buffer (like replay buffers)
 
         if seed_state is not None:
-            assert isinstance(seed_state, (tuple, list))
-            assert len(seed_state) == 5
+            assert isinstance(seed_state, (tuple, list)) #check if is in class
+            assert len(seed_state) == 5  # if seed_state in this step function == 5
             seed_state = (
                 str(seed_state[0]),
                 np.array(seed_state[1], dtype=np.uint32),
@@ -909,7 +909,7 @@ class BaseEnvironment(ABC):
                 int(seed_state[3]),
                 float(seed_state[4]),
             )
-            np.random.set_state(seed_state)
+            np.random.set_state(seed_state)  
 
         self._replay_log["step"].append(
             dict(actions=actions, seed_state=np.random.get_state())
