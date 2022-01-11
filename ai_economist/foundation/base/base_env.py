@@ -909,7 +909,14 @@ class BaseEnvironment(ABC):
                 int(seed_state[3]),
                 float(seed_state[4]),
             )
-            np.random.set_state(seed_state)  
+            np.random.set_state(seed_state)  # resets back to previous randomized state before changes
+
+            # assuming above in line 912 works like this?
+            # hypothetical situation
+            # 1. simulate agent stuff
+            # 2. randomize the agent stuff so it's fair
+            # 3. do stuff with it 
+            # 4. set it back to the same step 2 randomized state before anything happened
 
         self._replay_log["step"].append(
             dict(actions=actions, seed_state=np.random.get_state())
